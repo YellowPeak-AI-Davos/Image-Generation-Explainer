@@ -1,0 +1,79 @@
+<dt-header>
+<style>
+dt-header {
+  display: block;
+  position: relative;
+  height: 60px;
+  background-color: #EBC043;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 2;
+  color: rgba(0, 0, 0, 0.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
+}
+dt-header .content {
+  height: 70px;
+}
+dt-header a {
+  font-size: 16px;
+  height: 60px;
+  line-height: 60px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 22px 0;
+}
+dt-header a:hover {
+  color: rgba(255, 255, 255, 1);
+}
+dt-header .logo-img {
+  height: 40px;
+  position: relative;
+  top: 10px;
+  margin-right: 8px;
+  filter: brightness(0) invert(1);
+}
+@media(min-width: 1080px) {
+  dt-header {
+    height: 70px;
+  }
+  dt-header a {
+    height: 70px;
+    line-height: 70px;
+    padding: 28px 0;
+  }
+  dt-header .logo-img {
+    height: 50px;
+    top: 10px;
+  }
+}
+dt-header .logo {
+  font-size: 17px;
+  font-weight: 200;
+}
+dt-header .nav {
+  float: right;
+  font-weight: 300;
+}
+dt-header .nav a {
+  font-size: 12px;
+  margin-left: 24px;
+  text-transform: uppercase;
+}
+</style>
+
+<div class="content l-page">
+  <a href="/" class="logo">
+    <img src="Logo-Main.svg" alt="YellowPeak AI" class="logo-img">
+  </a>
+  <div class="nav">
+    <a href="index.html">Home</a>
+    <a href="vae.html">VAE</a>
+    <a href="gan.html">GAN</a>
+    <a href="pixel-diffusion.html">Pixel Diffusion</a>
+    <a href="latent-diffusion.html">Latent Diffusion</a>
+    <a href="autoregressive.html">Autoregressive</a>
+    <a href="diffusion_transformer.html">Diffusion Transformer</a>
+  </div>
+</div>
+</dt-header>

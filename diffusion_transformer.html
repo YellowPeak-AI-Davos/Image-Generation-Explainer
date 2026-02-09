@@ -1,0 +1,317 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Distill Template -->
+<script src="https://distill.pub/template.v1.js"></script>
+
+<!-- jQuery for loading header -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- MathJax for rendering equations -->
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    }
+  };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+    /* Custom styles for DiT Visualization */
+    .dit-container {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        background: #f9f9f9;
+        padding: 20px;
+        margin: 2rem 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    .canvas-wrapper {
+        position: relative;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    canvas {
+        background: #fff;
+        border-radius: 4px;
+        cursor: crosshair;
+    }
+
+    .controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    button.action-btn {
+        padding: 10px 20px;
+        background-color: #7c3aed; /* Violet */
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.1s, background-color 0.2s;
+    }
+
+    button.action-btn:hover { background-color: #6d28d9; }
+    button.action-btn:active { transform: scale(0.96); }
+    button.action-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+    .instruction-text {
+        font-family: monospace;
+        color: #555;
+        margin-top: 10px;
+        text-align: center;
+        height: 20px;
+    }
+
+    .legend {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 15px;
+        font-size: 0.9em;
+        color: #444;
+    }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .color-box { width: 12px; height: 12px; border-radius: 2px; }
+
+</style>
+
+<!-- Header Placeholder -->
+<div id="includedContent"></div>
+<script> 
+    $(function(){
+      $("#includedContent").load("header.html"); 
+    });
+</script> 
+
+<dt-article>
+  <h1>Diffusion Transformers (DiT)</h1>
+  <h2>The Convergence of Architectures</h2>
+
+  <hr>
+
+  <h2>Merging Paradigms</h2>
+  <p>
+    We have explored two distinct worlds:
+  </p>
+  <ul>
+      <li><strong>Diffusion Models</strong> (using U-Nets): Excellent at generating continuous, high-fidelity textures, but struggle with global coherence and scalability.</li>
+      <li><strong>Autoregressive Models</strong> (using Transformers): Excellent at global context and scaling (thanks to LLMs), but slow and constrained by discrete tokens.</li>
+  </ul>
+  <p>
+    Recent state-of-the-art models (like Stable Diffusion 3 and Sora) combine these worlds. They keep the <strong>Diffusion process</strong> (adding/removing noise) but replace the U-Net backbone with a <strong>Vision Transformer (ViT)</strong>.
+  </p>
+
+  <h2>How it Works: Patchify & Attend</h2>
+  <p>
+    Standard Diffusion models use Convolutional Networks (CNNs), which process images by looking at local neighbors. Transformers, however, have no concept of "neighbors"—they only understand sequences.
+  </p>
+  <p>
+    To fix this, DiTs employ a strategy from Vision Transformers:
+  </p>
+  <ol>
+      <li><strong>Patchify:</strong> The latent image is chopped into a grid of small patches (e.g., 2x2 or 4x4).</li>
+      <li><strong>Linear Embedding:</strong> Each patch is flattened into a vector (a "token"), exactly like a word in a sentence.</li>
+      <li><strong>Self-Attention:</strong> The Transformer processes these tokens. Crucially, <strong>every patch can "attend" to every other patch</strong> instantly. The top-left corner knows what the bottom-right corner is doing.</li>
+  </ol>
+
+  <h2>Interactive: Global Attention Mechanism</h2>
+  <p>
+    The simulation below demonstrates why Transformers are powerful for images.
+  </p>
+  <p>
+    <strong>1. Patchify:</strong> The image is broken into tokens.<br>
+    <strong>2. Hover:</strong> Move your mouse over a patch. The <span style="color:#7c3aed; font-weight:bold;">Purple Lines</span> represent <strong>Self-Attention</strong>. Notice how a patch can attend to distant parts of the image to understand context (e.g., "I am blue sky, I should look for the sun").<br>
+    <strong>3. Process:</strong> Click to run a Transformer block and denoise the patches.
+  </p>
+
+  <div class="dit-container">
+    <div class="legend">
+        <div class="legend-item"><div class="color-box" style="background:#ddd; border:1px solid #999;"></div> Patch / Token</div>
+        <div class="legend-item"><div class="color-box" style="background:rgba(124, 58, 237, 0.5);"></div> Attention Field</div>
+    </div>
+
+    <div class="canvas-wrapper">
+        <canvas id="ditCanvas" width="300" height="300"></canvas>
+    </div>
+
+    <div class="controls">
+        <button class="action-btn" id="resetBtn" onclick="resetSim()">1. Reset / Add Noise</button>
+        <button class="action-btn" id="processBtn" onclick="processBlock()">2. Apply Transformer Block</button>
+    </div>
+    
+    <div class="instruction-text" id="statusText">Hover over patches to see Global Attention.</div>
+  </div>
+
+  <h2>Why this wins</h2>
+  <p>
+    By replacing the U-Net with a Transformer, we unlock <strong>Scaling Laws</strong>. Just like LLMs get smarter with more data and parameters, Diffusion Transformers show the same property. They don't just memorize textures; they "understand" the physics and composition of the scene, allowing for complex video generation and precise prompt adherence.
+  </p>
+
+</dt-article>
+
+<script>
+    const canvas = document.getElementById('ditCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusText = document.getElementById('statusText');
+
+    // Config
+    const gridSize = 10; // 10x10 patches
+    const patchSize = canvas.width / gridSize;
+    
+    // State
+    let patches = []; // Stores current color/noise level of each patch
+    let noiseLevel = 1.0; // 0.0 to 1.0
+
+    // Target image (Simple landscape)
+    function getTargetColor(r, c) {
+        // r=row, c=col
+        // Sky
+        if (r < 6) return [135, 206, 235]; // Sky Blue
+        // Sun
+        if (r < 4 && c > 6) return [255, 215, 0]; // Gold
+        // Grass
+        return [34, 139, 34]; // Forest Green
+    }
+
+    function init() {
+        patches = [];
+        noiseLevel = 1.0;
+        for(let r=0; r<gridSize; r++) {
+            for(let c=0; c<gridSize; c++) {
+                patches.push({
+                    r: r,
+                    c: c,
+                    target: getTargetColor(r, c),
+                    current: [128, 128, 128] // Start greyish
+                });
+            }
+        }
+        draw();
+    }
+
+    function draw() {
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+
+        // Draw Patches
+        for(let i=0; i<patches.length; i++) {
+            const p = patches[i];
+            const x = p.c * patchSize;
+            const y = p.r * patchSize;
+
+            // Mix Target + Noise based on noiseLevel
+            // Simple visual approximation of diffusion state
+            const nR = Math.random() * 255;
+            const nG = Math.random() * 255;
+            const nB = Math.random() * 255;
+
+            // Interpolate
+            const showR = p.target[0] * (1-noiseLevel) + nR * noiseLevel;
+            const showG = p.target[1] * (1-noiseLevel) + nG * noiseLevel;
+            const showB = p.target[2] * (1-noiseLevel) + nB * noiseLevel;
+
+            ctx.fillStyle = `rgb(${showR}, ${showG}, ${showB})`;
+            ctx.fillRect(x, y, patchSize, patchSize);
+            
+            // Grid lines (Patchify visual)
+            ctx.strokeStyle = "rgba(0,0,0,0.1)";
+            ctx.strokeRect(x, y, patchSize, patchSize);
+        }
+    }
+
+    function drawAttention(index) {
+        // Redraw base to clear previous lines
+        draw();
+
+        const origin = patches[index];
+        const oX = origin.c * patchSize + patchSize/2;
+        const oY = origin.r * patchSize + patchSize/2;
+
+        // Highlight Origin
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(origin.c*patchSize, origin.r*patchSize, patchSize, patchSize);
+
+        // Draw Attention Lines
+        // In real transformers, attention is sparse or weighted.
+        // We simulate this by drawing lines to "relevant" patches (same type).
+        
+        ctx.beginPath();
+        for(let i=0; i<patches.length; i++) {
+            if (i === index) continue;
+            
+            const target = patches[i];
+            
+            // Simple logic: Attend to patches of similar target color (simulating semantic link)
+            // Or random for "Global" feel
+            const isSimilar = 
+                Math.abs(origin.target[0] - target.target[0]) < 50 &&
+                Math.abs(origin.target[1] - target.target[1]) < 50;
+
+            if (isSimilar || Math.random() > 0.9) {
+                const tX = target.c * patchSize + patchSize/2;
+                const tY = target.r * patchSize + patchSize/2;
+
+                ctx.moveTo(oX, oY);
+                ctx.lineTo(tX, tY);
+            }
+        }
+        ctx.strokeStyle = "rgba(124, 58, 237, 0.4)"; // Violet transparent
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+
+    // Interaction
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const c = Math.floor(x / patchSize);
+        const r = Math.floor(y / patchSize);
+        const idx = r * gridSize + c;
+
+        if (idx >= 0 && idx < patches.length) {
+            drawAttention(idx);
+            statusText.innerText = `Token [${r},${c}] attending to global context...`;
+        }
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        draw();
+        statusText.innerText = "Hover over patches to see Global Attention.";
+    });
+
+    function processBlock() {
+        if (noiseLevel > 0) {
+            noiseLevel -= 0.2;
+            if (noiseLevel < 0) noiseLevel = 0;
+            draw();
+            statusText.innerText = "Transformer Block Applied. Noise Reduced.";
+        } else {
+            statusText.innerText = "Image Fully Denoised.";
+        }
+    }
+
+    function resetSim() {
+        noiseLevel = 1.0;
+        draw();
+        statusText.innerText = "Reset to Pure Noise.";
+    }
+
+    // Start
+    init();
+
+</script>

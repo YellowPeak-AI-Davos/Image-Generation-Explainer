@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8">
+<script src="https://distill.pub/template.v1.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<div id="includedContent"></div>
+
+<script> 
+    $(function(){
+      $("#includedContent").load("header.html"); 
+    });
+</script> 
+
+<dt-article>
+  <h1>Towards Generative Image AI</h1>
+  <h2>A technical guide for the inner workings of modern generative image models</h2>
+    <h4>Presented by <a href="https://yellowpeak.ch" target="_blank" rel="noopener">YellowPeak AI</a> | Author: Sven Pfiffner</h4>
+
+  <hr>
+
+  <h2>Introduction</h2>
+
+  <p>At its core, every generative image model shares a single goal: to learn the underlying probability distribution of visual data. How they achieve this, however, varies drastically.
+
+This guide breaks down the core families of generative architectures. You will learn how VAEs focus on probabilistic encodings to approximate data, while GANs utilize a competitive architecture to force realism. We will then bridge the gap to the latest generation of models, exploring how Autoregressive networks treat pixels as sequences, and how Diffusion models reverse the thermodynamic process of entropy to generate high-fidelity images. Whether you are a developer or a researcher, this guide uncovers the inner workings of the engines driving the AI art revolution.</p>
+
+</dt-article>

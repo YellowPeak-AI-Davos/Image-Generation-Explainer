@@ -1,0 +1,294 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Distill Template -->
+<script src="https://distill.pub/template.v1.js"></script>
+
+<!-- jQuery for loading header -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- MathJax for rendering equations -->
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+    }
+  };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+    /* Custom styles for the AR Visualization */
+    .ar-container {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        background: #f9f9f9;
+        padding: 20px;
+        margin: 2rem 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    .canvas-wrapper {
+        position: relative;
+        margin-bottom: 20px;
+        display: flex;
+        gap: 20px;
+    }
+
+    canvas {
+        background: #fff;
+        border: 1px solid #ccc;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        image-rendering: pixelated; 
+    }
+
+    .controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
+    button.step-btn {
+        padding: 10px 20px;
+        background-color: #f59e0b; /* Amber */
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+
+    button.step-btn:active { transform: scale(0.96); }
+    button.step-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+    button.play-btn {
+        background-color: #10b981; /* Green */
+    }
+
+    .context-info {
+        font-family: monospace;
+        color: #555;
+        margin-top: 10px;
+        text-align: center;
+        height: 40px;
+    }
+
+    .highlight-box {
+        position: absolute;
+        border: 2px solid red;
+        pointer-events: none;
+        transition: all 0.1s;
+    }
+</style>
+
+<!-- Header Placeholder -->
+<div id="includedContent"></div>
+<script> 
+    $(function(){
+      $("#includedContent").load("header.html"); 
+    });
+</script> 
+
+<dt-article>
+  <h1>Autoregressive Models</h1>
+  <h2>If an Image is just a Sentence of Pixels...</h2>
+
+  <hr>
+
+  <h2>The Language of Images</h2>
+  <p>
+    Before Diffusion models took over the world, there was another powerful idea: treating image generation exactly like text generation.
+  </p>
+  <p>
+    Models like GPT-4 generate text <strong>autoregressively</strong>—they predict the next word based on all the previous words. Autoregressive Image Models (like PixelCNN, PixelRNN, and ImageGPT) apply this exact logic to visual data. They flatten the 2D grid of an image into a 1D sequence of pixels and learn to predict the color of pixel $x_i$ given the history of pixels $x_1, \dots, x_{i-1}$.
+  </p>
+
+  <h2>The Math: The Chain Rule of Probability</h2>
+  <p>
+    The goal is to model the joint distribution of all pixels $p(x)$. Using the chain rule of probability, we can factorize this difficult joint distribution into a product of simple conditional distributions:
+  </p>
+  <p>
+    $$ p(x) = \prod_{i=1}^{N} p(x_i | x_1, \dots, x_{i-1}) $$
+  </p>
+  <p>
+    This means the model asks: "Given that the top-left pixel is blue, and the next one is blue... what should the third one be?"
+  </p>
+
+  <h2>Interactive: The Raster Scan</h2>
+  <p>
+    Most Autoregressive models generate images in "Raster Scan" order: row by row, from top-left to bottom-right.
+  </p>
+  <p>
+    <strong>Simulation:</strong> The grid below represents a 16x16 image (256 tokens). <br>
+    The <span style="color:red; font-weight:bold;">Red Box</span> is the pixel currently being predicted. <br>
+    The <span style="background:#ddd; padding:2px;">Grey/Colored Area</span> is the "Context" (History) the model can see. <br>
+    The <span style="color:#aaa;">White Area</span> is the future (Masked), which is invisible to the model.
+  </p>
+
+  <div class="ar-container">
+    <div class="canvas-wrapper">
+        <canvas id="arCanvas" width="256" height="256"></canvas>
+    </div>
+
+    <div class="controls">
+        <button class="step-btn" id="stepBtn" onclick="step()">Predict Next Pixel</button>
+        <button class="step-btn play-btn" id="playBtn" onclick="togglePlay()">Auto-Complete</button>
+        <button class="step-btn" style="background:#ef4444" onclick="reset()">Reset</button>
+    </div>
+
+    <div class="context-info" id="status">
+        Step 0/256<br>Context: Empty
+    </div>
+  </div>
+
+  <h2>Strengths and Weaknesses</h2>
+  
+  <h3>Strengths</h3>
+  <p>
+    <strong>Exact Likelihoods:</strong> Unlike GANs, AR models optimize the exact log-likelihood of the data. This means training is very stable and doesn't suffer from mode collapse.
+  </p>
+  <p>
+    <strong>Global Coherence:</strong> Because the model attends to previously generated pixels (via Transformers or LSTM layers), it can maintain consistency. If it started drawing a dog's head at the top, it knows to draw the dog's body at the bottom.
+  </p>
+
+  <h3>Weaknesses</h3>
+  <p>
+    <strong>Sequential Slowness:</strong> This is the fatal flaw. To generate a 256x256 image, the model must run the forward pass 65,536 times—once for every single pixel. This makes generation incredibly slow compared to GANs (1 pass) or even Diffusion (50-100 passes).
+  </p>
+  <p>
+    <strong>Order Bias:</strong> The model is great at continuing an image downwards, but often struggles to "look ahead" or fix mistakes made early in the sequence.
+  </p>
+
+</dt-article>
+
+<script>
+    const canvas = document.getElementById('arCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusDiv = document.getElementById('status');
+    const playBtn = document.getElementById('playBtn');
+
+    // Grid Config
+    const gridRes = 16; // 16x16 grid
+    const pixelSize = canvas.width / gridRes;
+    const totalPixels = gridRes * gridRes;
+    
+    let currentStep = 0;
+    let isPlaying = false;
+    let animationFrame;
+
+    // Define the "Target" image (A simple Alien Sprite or Shape)
+    const targetImage = [];
+    
+    // Procedurally generate a target image (Symmetric Invader style)
+    for(let y=0; y<gridRes; y++) {
+        for(let x=0; x<gridRes; x++) {
+            // Simple logic for a shape
+            let isPixel = false;
+            
+            // Central symmetry check
+            const distFromCenter = Math.abs(x - 7.5);
+            const yNorm = y / gridRes;
+
+            // Alien head shape logic
+            if (y > 3 && y < 13 && distFromCenter < 5) isPixel = true;
+            if (y > 5 && y < 10 && distFromCenter < 7) isPixel = true;
+            // Eyes
+            if (y === 6 && (x===5 || x===10)) isPixel = false;
+            
+            // Color logic
+            if (isPixel) {
+                targetImage.push('rgb(79, 70, 229)'); // Indigo
+            } else {
+                targetImage.push('rgb(243, 244, 246)'); // Grey background
+            }
+        }
+    }
+
+    function drawGrid() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        for (let i = 0; i < totalPixels; i++) {
+            const x = (i % gridRes) * pixelSize;
+            const y = Math.floor(i / gridRes) * pixelSize;
+
+            if (i < currentStep) {
+                // Past (Generated)
+                ctx.fillStyle = targetImage[i];
+                ctx.fillRect(x, y, pixelSize, pixelSize);
+                ctx.strokeStyle = '#e5e7eb';
+                ctx.strokeRect(x, y, pixelSize, pixelSize);
+            } else if (i === currentStep) {
+                // Present (Being Predicted) - The "Cursor"
+                ctx.fillStyle = '#fca5a5'; // Light red placeholder
+                ctx.fillRect(x, y, pixelSize, pixelSize);
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, pixelSize, pixelSize);
+                ctx.lineWidth = 1;
+            } else {
+                // Future (Masked)
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(x, y, pixelSize, pixelSize);
+                ctx.strokeStyle = '#eee';
+                ctx.strokeRect(x, y, pixelSize, pixelSize);
+            }
+        }
+    }
+
+    function updateStatus() {
+        const x = currentStep % gridRes;
+        const y = Math.floor(currentStep / gridRes);
+        statusDiv.innerHTML = `Predicting Pixel (${x}, ${y}) [Index ${currentStep}]<br>Conditioned on ${currentStep} previous tokens.`;
+    }
+
+    function step() {
+        if (currentStep < totalPixels) {
+            currentStep++;
+            drawGrid();
+            updateStatus();
+        } else {
+            isPlaying = false;
+            playBtn.innerText = "Auto-Complete";
+            statusDiv.innerHTML = "Generation Complete.";
+        }
+    }
+
+    function autoPlay() {
+        if (!isPlaying) return;
+        step();
+        if (currentStep < totalPixels) {
+            // Speed up as it goes
+            const delay = Math.max(10, 50 - (currentStep * 0.1));
+            setTimeout(() => requestAnimationFrame(autoPlay), delay);
+        }
+    }
+
+    function togglePlay() {
+        if (isPlaying) {
+            isPlaying = false;
+            playBtn.innerText = "Auto-Complete";
+        } else {
+            isPlaying = true;
+            playBtn.innerText = "Pause";
+            autoPlay();
+        }
+    }
+
+    function reset() {
+        isPlaying = false;
+        currentStep = 0;
+        playBtn.innerText = "Auto-Complete";
+        drawGrid();
+        statusDiv.innerHTML = "Step 0/256<br>Context: Empty";
+    }
+
+    // Init
+    drawGrid();
+
+</script>

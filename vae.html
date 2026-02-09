@@ -1,0 +1,1020 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Distill Template -->
+<script src="https://distill.pub/template.v1.js"></script>
+
+<!-- jQuery for loading header -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- MathJax for rendering equations -->
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      tags: 'ams'
+    },
+    startup: {
+      pageReady: () => {
+        return MathJax.startup.defaultPageReady();
+      }
+    }
+  };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+    /* ── Global custom styles ── */
+    .interactive-container {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        background: #f9f9f9;
+        padding: 24px;
+        margin: 2rem 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    .interactive-container h4 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #888;
+    }
+    .canvas-wrapper {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .control-panel {
+        margin-top: 14px;
+        font-size: 0.9em;
+        color: #555;
+        text-align: center;
+        max-width: 600px;
+    }
+
+    /* ── Derivation steps ── */
+    .derivation-step {
+        background: #f4f8fb;
+        border-left: 4px solid #EBC043;
+        padding: 16px 20px;
+        margin: 1.2rem 0;
+        border-radius: 0 6px 6px 0;
+    }
+    .derivation-step .step-label {
+        font-weight: 700;
+        color: #EBC043;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+
+    /* ── Intuition callout boxes ── */
+    .intuition-box {
+        background: #fffbe6;
+        border: 1px solid #EBC043;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin: 1.5rem 0;
+    }
+    .intuition-box::before {
+        content: '💡 Intuition';
+        display: block;
+        font-weight: 700;
+        font-size: 0.85em;
+        color: #b8941e;
+        margin-bottom: 6px;
+    }
+
+    /* ── Latent map (existing, enhanced) ── */
+    .latent-map {
+        position: relative;
+        width: 260px;
+        height: 260px;
+        background: white;
+        border: 1px solid #ccc;
+        cursor: crosshair;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.04);
+    }
+    .latent-cursor {
+        position: absolute;
+        width: 14px; height: 14px;
+        background: rgba(235,192,67,0.85);
+        border: 2px solid white;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        top: 50%; left: 50%;
+        box-shadow: 0 0 6px rgba(0,0,0,0.25);
+        transition: top 0.04s, left 0.04s;
+    }
+    .output-preview {
+        width: 260px; height: 260px;
+        background: white;
+        border: 1px solid #ccc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .axis-label {
+        font-size: 11px;
+        color: #888;
+        position: absolute;
+    }
+    .label-x { bottom: -22px; width: 100%; text-align: center; }
+    .label-y { left: -28px; top: 50%; transform: rotate(-90deg) translateX(50%); transform-origin: center left; }
+
+    /* ── AE vs VAE comparison ── */
+    .comparison-canvases {
+        display: flex;
+        gap: 32px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .comparison-canvases .panel {
+        text-align: center;
+    }
+    .comparison-canvases .panel canvas {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .comparison-canvases .panel-label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 0.95em;
+    }
+
+    /* ── Reparam demo ── */
+    .reparam-viz {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .reparam-viz canvas {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .reparam-arrow {
+        font-size: 28px;
+        color: #bbb;
+    }
+
+    /* ── Slider rows ── */
+    .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 8px 0;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .slider-row label {
+        font-weight: 600;
+        min-width: 100px;
+        text-align: right;
+    }
+    .slider-row input[type=range] {
+        width: 260px;
+        accent-color: #EBC043;
+    }
+    .slider-row .val {
+        min-width: 50px;
+        font-family: monospace;
+    }
+
+    /* ── Beta tradeoff ── */
+    .tradeoff-canvases {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 8px;
+    }
+    .tradeoff-canvases .panel {
+        text-align: center;
+    }
+    .tradeoff-canvases .panel canvas {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .tradeoff-canvases .panel-label {
+        font-size: 0.82em;
+        color: #666;
+        margin-top: 4px;
+    }
+</style>
+
+<!-- Header -->
+<div id="includedContent"></div>
+<script> 
+    $(function(){
+      $("#includedContent").load("header.html"); 
+    });
+</script> 
+
+<dt-article>
+
+  <h1>Variational Autoencoders</h1>
+  <h2>Learning to Generate by Learning to Compress</h2>
+  <hr>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 1 – Motivation                                -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Why Do We Need VAEs?</h2>
+  <p>
+    Imagine you had a massive photo album of every human face on earth. You could flip through it, but you could never <em>create</em> a new face that doesn't already exist. What if, instead of storing the photos, you could learn the <strong>recipe</strong> that generates them?
+  </p>
+  <p>
+    That recipe is a <strong>probability distribution</strong>. If we could capture the distribution $p(x)$ that generates all realistic images $x$, we could sample from it at will and produce an unlimited number of new, realistic outputs. The Variational Autoencoder (VAE) is one of the first deep learning architectures designed to learn this distribution.
+  </p>
+  <p>
+    To understand why VAEs matter—and what makes them different—we first need to understand the simpler model they evolved from: the standard Autoencoder.
+  </p>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 2 – From AE to VAE                            -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>From Autoencoders to VAEs</h2>
+
+  <h3>The Standard Autoencoder</h3>
+  <p>
+    A standard Autoencoder has two components: an <strong>Encoder</strong> that compresses an input $x$ into a low-dimensional code $z$, and a <strong>Decoder</strong> that reconstructs $x$ from $z$. The whole system is trained to minimize the difference between input and output. The latent code $z$ is a fixed, deterministic vector—one input always maps to one point.
+  </p>
+  <p>
+    The problem? The latent space of a standard Autoencoder is <strong>unstructured</strong>. The encoder just finds <em>any</em> mapping that helps reconstruction—it has no incentive to organize the space smoothly. If you pick a random point in latent space, the decoder will likely produce garbage.
+  </p>
+
+  <div class="intuition-box">
+    Think of it like a filing cabinet: a standard Autoencoder stuffs documents into random drawers (great for retrieval), but if you open a drawer you've never used before, you find nonsense. A VAE organizes the cabinet so that every drawer contains something meaningful, and nearby drawers contain similar documents.
+  </div>
+
+  <h3>The Key Insight of VAEs</h3>
+  <p>
+    Instead of encoding each input as a <em>single point</em> $z$, a VAE encodes it as a <strong>probability distribution</strong> over $z$. Specifically, the encoder outputs the parameters of a Gaussian: a mean vector $\boldsymbol{\mu}$ and a variance vector $\boldsymbol{\sigma}^2$. We then <em>sample</em> from this distribution to get the code that the decoder uses.
+  </p>
+  <p>
+    This one change has a profound consequence: because different inputs now <strong>overlap</strong> in latent space, the decoder must learn to produce sensible outputs for the <em>entire</em> neighborhood of each encoded point—not just a single location. The result is a smooth, continuous latent space where interpolation and generation actually work.
+  </p>
+
+  <!-- Interactive: AE vs VAE latent space comparison -->
+  <div class="interactive-container" id="aeVaeContainer">
+    <h4>Interactive · Autoencoder vs. VAE Latent Space</h4>
+    <div class="comparison-canvases">
+      <div class="panel">
+        <div class="panel-label">Standard Autoencoder</div>
+        <canvas id="aeCanvas" width="280" height="280"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Variational Autoencoder</div>
+        <canvas id="vaeCanvas" width="280" height="280"></canvas>
+      </div>
+    </div>
+    <div class="control-panel">
+      <p><strong>Try it:</strong> Hover over either latent space. The AE has sharp clusters with dead zones between them — sampling from the gap yields noise. The VAE has overlapping, smooth distributions — every region decodes to something meaningful.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 3 – Architecture                              -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Architecture in Detail</h2>
+  <p>
+    The VAE introduces a probabilistic framework built on three key components. Let's walk through each one.
+  </p>
+
+  <h3>1. The Probabilistic Encoder $q_\phi(z|x)$</h3>
+  <p>
+    A neural network parameterized by $\phi$ takes an input $x$ (e.g., an image) and outputs <strong>two vectors</strong>:
+  </p>
+  <ul>
+    <li>$\boldsymbol{\mu}_\phi(x)$ — the mean of the latent distribution</li>
+    <li>$\boldsymbol{\sigma}_\phi(x)$ — the standard deviation of the latent distribution</li>
+  </ul>
+  <p>
+    Together, these define a diagonal Gaussian: $q_\phi(z|x) = \mathcal{N}(z;\, \boldsymbol{\mu}_\phi(x),\, \text{diag}(\boldsymbol{\sigma}_\phi^2(x)))$.
+  </p>
+  <p>
+    In practice, the network actually outputs the <strong>log-variance</strong> $\log \boldsymbol{\sigma}^2$ instead of $\boldsymbol{\sigma}$ directly. This is more numerically stable because the variance must be positive, and the exponential of any real number is always positive.
+  </p>
+
+  <h3>2. Sampling &amp; The Reparameterization Trick</h3>
+  <p>
+    To pass information from encoder to decoder, we need to <em>sample</em> a latent vector $z$ from $q_\phi(z|x)$. But here's the catch: <strong>sampling is not differentiable</strong>. If we just draw $z \sim \mathcal{N}(\boldsymbol{\mu}, \boldsymbol{\sigma}^2)$, we cannot compute gradients with respect to $\boldsymbol{\mu}$ and $\boldsymbol{\sigma}$, and our network cannot learn.
+  </p>
+  <p>
+    The <strong>Reparameterization Trick</strong> solves this elegantly. Instead of sampling $z$ directly, we:
+  </p>
+  <ol>
+    <li>Sample noise from a fixed distribution: $\boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$</li>
+    <li>Transform it deterministically: $z = \boldsymbol{\mu} + \boldsymbol{\sigma} \odot \boldsymbol{\epsilon}$</li>
+  </ol>
+  <p>
+    The result is the same distribution, but now $z$ is a deterministic function of $\boldsymbol{\mu}$, $\boldsymbol{\sigma}$, and $\boldsymbol{\epsilon}$. Since $\boldsymbol{\epsilon}$ is not a learned parameter, gradients flow cleanly through $\boldsymbol{\mu}$ and $\boldsymbol{\sigma}$ via standard backpropagation.
+  </p>
+
+  <div class="intuition-box">
+    Think of it this way: instead of asking "give me a random number from a custom bell curve," you ask "give me a random number from a <em>standard</em> bell curve, and I'll shift and stretch it myself." The randomness comes from $\epsilon$, but the shifting ($\mu$) and stretching ($\sigma$) are fully learnable.
+  </div>
+
+  <!-- Interactive: Reparameterization Trick -->
+  <div class="interactive-container" id="reparamContainer">
+    <h4>Interactive · The Reparameterization Trick</h4>
+    <div class="slider-row">
+      <label>Mean $\mu$:</label>
+      <input type="range" id="reparamMu" min="-3" max="3" step="0.1" value="0">
+      <span class="val" id="reparamMuVal">0.0</span>
+    </div>
+    <div class="slider-row">
+      <label>Std. Dev. $\sigma$:</label>
+      <input type="range" id="reparamSigma" min="0.1" max="2.5" step="0.1" value="1">
+      <span class="val" id="reparamSigmaVal">1.0</span>
+    </div>
+    <div class="reparam-viz">
+      <div class="panel">
+        <div class="panel-label">$\epsilon \sim \mathcal{N}(0,1)$</div>
+        <canvas id="epsCanvas" width="220" height="160"></canvas>
+      </div>
+      <div class="reparam-arrow">→</div>
+      <div class="panel">
+        <div class="panel-label">$z = \mu + \sigma \cdot \epsilon$</div>
+        <canvas id="zCanvas" width="220" height="160"></canvas>
+      </div>
+    </div>
+    <div class="control-panel">
+      <p>Drag the sliders to change $\mu$ and $\sigma$. The left plot always shows the <em>same</em> standard normal. The right plot shows the resulting $z$ distribution — shifted by $\mu$ and scaled by $\sigma$. The randomness is identical; only the transformation changes.</p>
+    </div>
+  </div>
+
+  <h3>3. The Probabilistic Decoder $p_\theta(x|z)$</h3>
+  <p>
+    A second neural network, parameterized by $\theta$, takes the sampled latent vector $z$ and produces a reconstruction $\hat{x}$. For images, we usually model $p_\theta(x|z)$ as a Gaussian (for continuous pixels) or a Bernoulli (for binary pixels), so the "reconstruction loss" becomes either Mean Squared Error or Binary Cross-Entropy, respectively.
+  </p>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 4 – ELBO Derivation                           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Mathematics: Deriving the ELBO</h2>
+  <p>
+    The core goal of a VAE is to maximize the log-likelihood of our data: $\log p_\theta(x)$. But computing this requires marginalizing over all possible latent variables:
+  </p>
+  <p>
+    $$p_\theta(x) = \int p_\theta(x|z)\, p(z)\, dz$$
+  </p>
+  <p>
+    This integral is <strong>intractable</strong> for any non-trivial decoder. We cannot sum over every possible latent code. Instead, we derive a <strong>lower bound</strong> on $\log p_\theta(x)$ that <em>is</em> tractable. This bound is called the <strong>Evidence Lower Bound (ELBO)</strong>, and maximizing it is guaranteed to push $\log p_\theta(x)$ upward.
+  </p>
+  <p>
+    There are several ways to derive the ELBO. Below is one of the most illuminating approaches, because it shows exactly where the approximation gap comes from.
+  </p>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 1 — Start with the log-evidence</div>
+    <p>
+      We begin with the quantity we want to maximize. Because $q_\phi(z|x)$ is a valid probability distribution, it integrates to 1, so multiplying by it changes nothing:
+    </p>
+    <p>
+      $$\log p_\theta(x) = \log p_\theta(x) \underbrace{\int q_\phi(z|x)\, dz}_{= \, 1}$$
+    </p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 2 — Bring the log inside the integral</div>
+    <p>
+      Since $\log p_\theta(x)$ does not depend on $z$, we can pull it inside the integral and rewrite the whole thing as an expectation under $q_\phi(z|x)$:
+    </p>
+    <p>
+      $$\log p_\theta(x) = \int q_\phi(z|x)\, \log p_\theta(x)\, dz = \mathbb{E}_{q_\phi(z|x)}\!\big[\log p_\theta(x)\big]$$
+    </p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 3 — Use Bayes' rule to expand $p_\theta(x)$</div>
+    <p>
+      By Bayes' theorem: $p_\theta(x) = \frac{p_\theta(x, z)}{p_\theta(z|x)}$. We substitute this inside the log:
+    </p>
+    <p>
+      $$= \mathbb{E}_{q_\phi(z|x)}\!\left[\log \frac{p_\theta(x, z)}{p_\theta(z|x)}\right]$$
+    </p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 4 — Multiply and divide by the approximate posterior</div>
+    <p>
+      We introduce our encoder $q_\phi(z|x)$ via the classic "multiply by 1" trick:
+    </p>
+    <p>
+      $$= \mathbb{E}_{q_\phi(z|x)}\!\left[\log \frac{p_\theta(x, z)}{q_\phi(z|x)} \cdot \frac{q_\phi(z|x)}{p_\theta(z|x)}\right]$$
+    </p>
+    <p>
+      Splitting the log of a product:
+    </p>
+    <p>
+      $$= \mathbb{E}_{q_\phi(z|x)}\!\left[\log \frac{p_\theta(x, z)}{q_\phi(z|x)}\right] + \mathbb{E}_{q_\phi(z|x)}\!\left[\log \frac{q_\phi(z|x)}{p_\theta(z|x)}\right]$$
+    </p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 5 — Identify the two terms</div>
+    <p>
+      The second term is, by definition, the <strong>Kullback-Leibler divergence</strong> between the approximate posterior and the true posterior:
+    </p>
+    <p>
+      $$\log p_\theta(x) = \underbrace{\mathbb{E}_{q_\phi(z|x)}\!\left[\log \frac{p_\theta(x, z)}{q_\phi(z|x)}\right]}_{\text{ELBO } \mathcal{L}(\theta, \phi; x)} + \underbrace{D_{\text{KL}}\!\big(q_\phi(z|x)\,\|\, p_\theta(z|x)\big)}_{\geq\, 0}$$
+    </p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 6 — The bound</div>
+    <p>
+      Since the KL divergence is always non-negative, the ELBO is a <strong>lower bound</strong> on the log-evidence:
+    </p>
+    <p>
+      $$\log p_\theta(x) \;\geq\; \text{ELBO} = \mathbb{E}_{q_\phi(z|x)}\!\left[\log \frac{p_\theta(x, z)}{q_\phi(z|x)}\right]$$
+    </p>
+    <p>
+      The gap between $\log p_\theta(x)$ and the ELBO is <em>exactly</em> $D_{\text{KL}}(q_\phi(z|x) \| p_\theta(z|x))$ — i.e., how well the encoder approximates the true posterior. A perfect encoder ($q = p_\theta(z|x)$) would close the gap entirely.
+    </p>
+  </div>
+
+  <div class="intuition-box">
+    The derivation tells us two things: <strong>(1)</strong> maximizing the ELBO is always safe — it pushes up the true likelihood; <strong>(2)</strong> the ELBO is tight when our encoder closely matches the true posterior. This gives us a principled training objective and a clear interpretation of what the encoder is doing.
+  </div>
+
+  <h3>Decomposing the ELBO into Two Losses</h3>
+  <p>
+    We can split the joint distribution $p_\theta(x, z) = p_\theta(x|z)\, p(z)$ and rearrange:
+  </p>
+  <p>
+    $$\text{ELBO} = \mathbb{E}_{q_\phi(z|x)}\!\left[\log \frac{p_\theta(x|z)\, p(z)}{q_\phi(z|x)}\right]$$
+  </p>
+  <p>
+    $$= \mathbb{E}_{q_\phi(z|x)}\!\big[\log p_\theta(x|z)\big] + \mathbb{E}_{q_\phi(z|x)}\!\left[\log \frac{p(z)}{q_\phi(z|x)}\right]$$
+  </p>
+  <p>
+    $$= \underbrace{\mathbb{E}_{q_\phi(z|x)}\!\big[\log p_\theta(x|z)\big]}_{\text{Reconstruction term}} - \underbrace{D_{\text{KL}}\!\big(q_\phi(z|x)\,\|\, p(z)\big)}_{\text{Regularization term}}$$
+  </p>
+  <p>
+    Since we <em>maximize</em> the ELBO, or equivalently <em>minimize</em> the negative ELBO, the <strong>VAE loss function</strong> is:
+  </p>
+  <p>
+    $$\boxed{\mathcal{L}_{\text{VAE}} = -\mathbb{E}_{q_\phi(z|x)}\!\big[\log p_\theta(x|z)\big] + D_{\text{KL}}\!\big(q_\phi(z|x)\,\|\, p(z)\big)}$$
+  </p>
+
+  <h3>What Each Term Does</h3>
+  <ul>
+    <li>
+      <strong>Reconstruction loss</strong> $-\mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)]$: Forces the decoder to accurately reproduce the input. In practice, this is the pixel-wise MSE or cross-entropy between $x$ and $\hat{x}$. It answers: <em>"Does the decoder's output look like the original?"</em>
+    </li>
+    <li>
+      <strong>KL divergence</strong> $D_{\text{KL}}(q_\phi(z|x) \| p(z))$: Pushes the learned encoding toward the prior $p(z) = \mathcal{N}(\mathbf{0}, \mathbf{I})$. It prevents the encoder from "cheating" by placing every input at a unique, isolated point. It answers: <em>"Is the latent space organized smoothly?"</em>
+    </li>
+  </ul>
+
+  <div class="intuition-box">
+    These two objectives are in tension. Reconstruction wants to preserve every detail (pushing encodings apart), while regularization wants to compress everything toward a single standard Gaussian (pulling encodings together). A well-trained VAE strikes a balance: enough structure to generate new data, enough precision to reconstruct existing data.
+  </div>
+
+  <h3>Closed-Form KL for Gaussians</h3>
+  <p>
+    When both $q_\phi(z|x)$ and $p(z)$ are Gaussian, the KL divergence has a closed-form solution. For a $d$-dimensional latent space:
+  </p>
+  <p>
+    $$D_{\text{KL}}\!\big(q_\phi(z|x)\,\|\, p(z)\big) = \frac{1}{2}\sum_{j=1}^{d}\left(\sigma_j^2 + \mu_j^2 - 1 - \log \sigma_j^2\right)$$
+  </p>
+  <p>
+    This means we never need to estimate this term with sampling—it can be computed analytically from the encoder's output, which makes training more stable.
+  </p>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 5 – β-VAE tradeoff                           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Reconstruction–Regularization Tradeoff</h2>
+  <p>
+    A common extension is the <strong>β-VAE</strong>, which adds a weighting factor $\beta$ to the KL term:
+  </p>
+  <p>
+    $$\mathcal{L}_{\beta\text{-VAE}} = -\mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)] + \beta \cdot D_{\text{KL}}(q_\phi(z|x) \| p(z))$$
+  </p>
+  <p>
+    When $\beta = 1$, we recover the standard VAE. Increasing $\beta$ forces a more structured latent space (better for disentanglement and generation) at the cost of blurrier reconstructions. Decreasing $\beta$ produces sharper images but a messier latent space.
+  </p>
+
+  <!-- Interactive: β tradeoff -->
+  <div class="interactive-container" id="betaContainer">
+    <h4>Interactive · The β Tradeoff</h4>
+    <div class="slider-row">
+      <label>$\beta$ weight:</label>
+      <input type="range" id="betaSlider" min="0" max="4" step="0.1" value="1">
+      <span class="val" id="betaVal">1.0</span>
+    </div>
+    <div class="tradeoff-canvases">
+      <div class="panel">
+        <canvas id="betaLatentCanvas" width="220" height="220"></canvas>
+        <div class="panel-label">Latent Space</div>
+      </div>
+      <div class="panel">
+        <canvas id="betaReconCanvas" width="220" height="220"></canvas>
+        <div class="panel-label">Reconstruction Quality</div>
+      </div>
+    </div>
+    <div class="control-panel">
+      <p>Slide $\beta$ to see the effect. Low $\beta$: sharp reconstruction but clustered, disorganized latent space. High $\beta$: smooth latent space but blurry output. The standard VAE ($\beta = 1$) is a balance.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 6 – Latent Space Explorer                     -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Exploring the Latent Space</h2>
+  <p>
+    The true power of a VAE is the <strong>continuous, organized latent space</strong>. Because the KL term nudges all encodings toward a shared prior, nearby points in latent space decode to semantically similar outputs. You can smoothly interpolate between two images, or traverse a single dimension to see one attribute change (e.g., expression, size, color) while others stay fixed.
+  </p>
+
+  <div class="interactive-container" id="latentExplorerContainer">
+    <h4>Interactive · Latent Space Decoder</h4>
+    <div class="canvas-wrapper">
+      <div class="latent-map" id="latentMap">
+        <div class="axis-label label-x">$z_1$ — Expression</div>
+        <div class="axis-label label-y">$z_2$ — Color / Size</div>
+        <div class="latent-cursor" id="cursor"></div>
+      </div>
+      <div class="output-preview">
+        <canvas id="outputCanvas" width="260" height="260"></canvas>
+      </div>
+    </div>
+    <div class="control-panel">
+      <p><strong>Hover</strong> over the left plane to move through the 2-D latent space. The "decoder" on the right reconstructs an output from the coordinates $(z_1, z_2)$. Notice how small movements produce <em>smooth</em> changes—no sudden jumps.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 7 – Summary & Limitations                     -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Summary &amp; Limitations</h2>
+  <p>
+    The VAE gives us a principled, probabilistic framework for generation:
+  </p>
+  <ul>
+    <li>It learns a <strong>smooth latent space</strong> where interpolation and sampling produce meaningful results.</li>
+    <li>It comes with a <strong>rigorous objective</strong> (the ELBO) grounded in variational inference.</li>
+    <li>The <strong>reparameterization trick</strong> makes the whole system end-to-end differentiable.</li>
+    <li>The closed-form KL divergence for Gaussians makes training efficient and stable.</li>
+  </ul>
+  <p>
+    However, VAEs have well-known limitations:
+  </p>
+  <ul>
+    <li><strong>Blurry outputs.</strong> The Gaussian assumption in the decoder and the pixel-wise reconstruction loss tend to produce images that average over possible details rather than committing to sharp ones.</li>
+    <li><strong>Posterior collapse.</strong> If the decoder is too powerful, it may learn to ignore $z$ entirely, causing the KL term to shrink to zero and the latent space to become meaningless.</li>
+    <li><strong>Limited expressiveness.</strong> A diagonal Gaussian encoder cannot capture complex, multimodal posteriors.</li>
+  </ul>
+  <p>
+    These limitations motivate the next family of generative models: <strong>Generative Adversarial Networks (GANs)</strong>, which replace the probabilistic loss with a learned discriminator to directly optimize for visual realism.
+  </p>
+
+</dt-article>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  ALL INTERACTIVE SCRIPTS                                   -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script>
+// ─── Utility: Gaussian PDF ───
+function gaussPDF(x, mu, sigma) {
+    return Math.exp(-0.5 * ((x - mu) / sigma) ** 2) / (sigma * Math.sqrt(2 * Math.PI));
+}
+
+// ─── Utility: draw 1-D Gaussian curve ───
+function drawGaussian(ctx, w, h, mu, sigma, color, label) {
+    ctx.clearRect(0, 0, w, h);
+    const pad = 20;
+    const pw = w - 2 * pad;
+    const ph = h - 2 * pad;
+
+    // axes
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad, h - pad);
+    ctx.lineTo(w - pad, h - pad);
+    ctx.moveTo(pad, h - pad);
+    ctx.lineTo(pad, pad);
+    ctx.stroke();
+
+    // tick labels
+    ctx.fillStyle = '#999';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    for (let v = -4; v <= 4; v += 2) {
+        const x = pad + ((v + 4) / 8) * pw;
+        ctx.fillText(v, x, h - pad + 14);
+    }
+
+    // curve
+    const maxPdf = gaussPDF(mu, mu, sigma);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= pw; i++) {
+        const xVal = -4 + (i / pw) * 8;
+        const yVal = gaussPDF(xVal, mu, sigma);
+        const cx = pad + i;
+        const cy = (h - pad) - (yVal / Math.max(maxPdf * 1.15, 0.001)) * ph;
+        if (i === 0) ctx.moveTo(cx, cy);
+        else ctx.lineTo(cx, cy);
+    }
+    ctx.stroke();
+
+    // fill
+    ctx.globalAlpha = 0.15;
+    ctx.lineTo(w - pad, h - pad);
+    ctx.lineTo(pad, h - pad);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+}
+
+// ═══════════════════════════════════════════
+// 1. AE vs VAE comparison
+// ═══════════════════════════════════════════
+(function() {
+    const aeCanvas = document.getElementById('aeCanvas');
+    const vaeCanvas = document.getElementById('vaeCanvas');
+    if (!aeCanvas || !vaeCanvas) return;
+    const aeCtx = aeCanvas.getContext('2d');
+    const vaeCtx = vaeCanvas.getContext('2d');
+    const W = 280, H = 280;
+
+    // cluster centers (7 "classes")
+    const centers = [
+        {x: 40, y: 50}, {x: 230, y: 40}, {x: 60, y: 230},
+        {x: 220, y: 210}, {x: 140, y: 140}, {x: 50, y: 140},
+        {x: 210, y: 130}
+    ];
+    const colors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22'];
+
+    function drawCluster(ctx, cx, cy, spread, color, n) {
+        ctx.fillStyle = color;
+        for (let i = 0; i < n; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const r = Math.random() * spread;
+            const px = cx + Math.cos(angle) * r;
+            const py = cy + Math.sin(angle) * r;
+            ctx.beginPath();
+            ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function drawEllipse(ctx, cx, cy, rx, ry, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 0.07;
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+
+    // Draw AE: tight clusters, empty space
+    function drawAE() {
+        aeCtx.clearRect(0, 0, W, H);
+        aeCtx.fillStyle = '#fafafa'; aeCtx.fillRect(0, 0, W, H);
+        centers.forEach((c, i) => drawCluster(aeCtx, c.x, c.y, 14, colors[i], 40));
+    }
+
+    // Draw VAE: overlapping Gaussians
+    function drawVAE() {
+        vaeCtx.clearRect(0, 0, W, H);
+        vaeCtx.fillStyle = '#fafafa'; vaeCtx.fillRect(0, 0, W, H);
+        // Draw ellipses first
+        centers.forEach((c, i) => {
+            const cx = c.x * 0.55 + W * 0.22;
+            const cy = c.y * 0.55 + H * 0.22;
+            drawEllipse(vaeCtx, cx, cy, 50 + Math.random() * 10, 40 + Math.random() * 10, colors[i]);
+        });
+        // Draw points
+        centers.forEach((c, i) => {
+            const cx = c.x * 0.55 + W * 0.22;
+            const cy = c.y * 0.55 + H * 0.22;
+            drawCluster(vaeCtx, cx, cy, 44, colors[i], 40);
+        });
+    }
+
+    drawAE();
+    drawVAE();
+
+    // Hover interaction: show what decoding from a point gives
+    function addHover(canvas, ctx, isVAE) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:absolute;padding:6px 10px;background:rgba(0,0,0,0.8);color:#fff;font-size:11px;border-radius:4px;pointer-events:none;display:none;white-space:nowrap;z-index:10;';
+        canvas.parentElement.style.position = 'relative';
+        canvas.parentElement.appendChild(overlay);
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
+            // Check proximity to any cluster
+            let closest = Infinity;
+            centers.forEach((c) => {
+                const cx = isVAE ? c.x * 0.55 + W * 0.22 : c.x;
+                const cy = isVAE ? c.y * 0.55 + H * 0.22 : c.y;
+                const d = Math.sqrt((mx - cx) ** 2 + (my - cy) ** 2);
+                if (d < closest) closest = d;
+            });
+
+            const threshold = isVAE ? 55 : 20;
+            overlay.style.display = 'block';
+            overlay.style.left = (mx + 12) + 'px';
+            overlay.style.top = (my - 24) + 'px';
+
+            if (closest < threshold) {
+                overlay.textContent = isVAE ? '✓ Meaningful output' : '✓ Near encoded point';
+                overlay.style.background = 'rgba(46,204,113,0.9)';
+            } else {
+                overlay.textContent = isVAE ? '✓ Smooth interpolation' : '✗ Dead zone — noise';
+                overlay.style.background = isVAE ? 'rgba(46,204,113,0.9)' : 'rgba(231,76,60,0.9)';
+            }
+        });
+        canvas.addEventListener('mouseleave', () => { overlay.style.display = 'none'; });
+    }
+
+    addHover(aeCanvas, aeCtx, false);
+    addHover(vaeCanvas, vaeCtx, true);
+})();
+
+// ═══════════════════════════════════════════
+// 2. Reparameterization Trick
+// ═══════════════════════════════════════════
+(function() {
+    const muSlider = document.getElementById('reparamMu');
+    const sigmaSlider = document.getElementById('reparamSigma');
+    const muValSpan = document.getElementById('reparamMuVal');
+    const sigmaValSpan = document.getElementById('reparamSigmaVal');
+    const epsCanvas = document.getElementById('epsCanvas');
+    const zCanvas = document.getElementById('zCanvas');
+    if (!epsCanvas || !zCanvas) return;
+    const epsCtx = epsCanvas.getContext('2d');
+    const zCtx = zCanvas.getContext('2d');
+
+    function update() {
+        const mu = parseFloat(muSlider.value);
+        const sigma = parseFloat(sigmaSlider.value);
+        muValSpan.textContent = mu.toFixed(1);
+        sigmaValSpan.textContent = sigma.toFixed(1);
+
+        drawGaussian(epsCtx, 220, 160, 0, 1, '#3498db');
+        drawGaussian(zCtx, 220, 160, mu, sigma, '#EBC043');
+    }
+
+    muSlider.addEventListener('input', update);
+    sigmaSlider.addEventListener('input', update);
+    update();
+})();
+
+// ═══════════════════════════════════════════
+// 3. β Tradeoff
+// ═══════════════════════════════════════════
+(function() {
+    const slider = document.getElementById('betaSlider');
+    const valSpan = document.getElementById('betaVal');
+    const latentCanvas = document.getElementById('betaLatentCanvas');
+    const reconCanvas = document.getElementById('betaReconCanvas');
+    if (!latentCanvas || !reconCanvas) return;
+    const latCtx = latentCanvas.getContext('2d');
+    const recCtx = reconCanvas.getContext('2d');
+    const W = 220, H = 220;
+
+    // Pseudo-random with seed for consistency
+    function seededRandom(seed) {
+        let s = seed;
+        return function() {
+            s = (s * 16807 + 0) % 2147483647;
+            return s / 2147483647;
+        };
+    }
+
+    // Cluster positions for 5 classes
+    const baseClusters = [
+        {x: 0.2, y: 0.2}, {x: 0.8, y: 0.2}, {x: 0.5, y: 0.5},
+        {x: 0.2, y: 0.8}, {x: 0.8, y: 0.8}
+    ];
+    const clusterColors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6'];
+
+    function drawLatent(beta) {
+        latCtx.clearRect(0, 0, W, H);
+        latCtx.fillStyle = '#fafafa'; latCtx.fillRect(0, 0, W, H);
+
+        // spread increases with beta (points pulled toward center)
+        // For low beta: tight clusters far apart. For high beta: diffuse, overlapping at center.
+        const rand = seededRandom(42);
+        const centerPull = Math.min(beta / 4, 0.9); // 0 to ~0.9
+        const spread = 8 + beta * 16;
+
+        baseClusters.forEach((c, ci) => {
+            const cx = W * (c.x * (1 - centerPull) + 0.5 * centerPull);
+            const cy = H * (c.y * (1 - centerPull) + 0.5 * centerPull);
+            latCtx.fillStyle = clusterColors[ci];
+            for (let i = 0; i < 30; i++) {
+                const angle = rand() * Math.PI * 2;
+                const r = rand() * spread;
+                latCtx.beginPath();
+                latCtx.arc(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r, 2.5, 0, Math.PI * 2);
+                latCtx.fill();
+            }
+        });
+    }
+
+    function drawRecon(beta) {
+        recCtx.clearRect(0, 0, W, H);
+
+        // Draw a "face" whose blur depends on beta
+        const blur = Math.min(beta * 3, 10);
+        const cx = W / 2, cy = H / 2;
+        const faceR = 65;
+
+        recCtx.filter = `blur(${blur}px)`;
+
+        // face
+        recCtx.fillStyle = '#f0c674';
+        recCtx.beginPath();
+        recCtx.arc(cx, cy, faceR, 0, Math.PI * 2);
+        recCtx.fill();
+        recCtx.strokeStyle = '#333';
+        recCtx.lineWidth = 2;
+        recCtx.stroke();
+
+        // eyes
+        recCtx.fillStyle = '#fff';
+        recCtx.beginPath();
+        recCtx.arc(cx - 22, cy - 14, 10, 0, Math.PI * 2);
+        recCtx.arc(cx + 22, cy - 14, 10, 0, Math.PI * 2);
+        recCtx.fill();
+        recCtx.stroke();
+        recCtx.fillStyle = '#333';
+        recCtx.beginPath();
+        recCtx.arc(cx - 22, cy - 14, 4, 0, Math.PI * 2);
+        recCtx.arc(cx + 22, cy - 14, 4, 0, Math.PI * 2);
+        recCtx.fill();
+
+        // smile
+        recCtx.beginPath();
+        recCtx.moveTo(cx - 25, cy + 20);
+        recCtx.quadraticCurveTo(cx, cy + 42, cx + 25, cy + 20);
+        recCtx.stroke();
+
+        recCtx.filter = 'none';
+
+        // Label
+        recCtx.fillStyle = '#999';
+        recCtx.font = '11px sans-serif';
+        recCtx.textAlign = 'center';
+        if (beta < 0.5) recCtx.fillText('Sharp (low regularization)', cx, H - 8);
+        else if (beta > 2.5) recCtx.fillText('Blurry (high regularization)', cx, H - 8);
+        else recCtx.fillText('Balanced (standard VAE)', cx, H - 8);
+    }
+
+    function update() {
+        const beta = parseFloat(slider.value);
+        valSpan.textContent = beta.toFixed(1);
+        drawLatent(beta);
+        drawRecon(beta);
+    }
+
+    slider.addEventListener('input', update);
+    update();
+})();
+
+// ═══════════════════════════════════════════
+// 4. Latent Space Face Explorer (enhanced)
+// ═══════════════════════════════════════════
+(function() {
+    const map = document.getElementById('latentMap');
+    const cursor = document.getElementById('cursor');
+    const canvas = document.getElementById('outputCanvas');
+    if (!map || !cursor || !canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = 260, H = 260;
+
+    function drawFace(z1, z2) {
+        ctx.clearRect(0, 0, W, H);
+
+        const size = 0.75 + (z2 + 1) * 0.35; // 0.75 → 1.45
+        const hue = 30 + (z2 + 1) * 20;       // warm orange range
+        const sat = 60 + (z1 + 1) * 20;
+        const light = 55 + z2 * 15;
+
+        ctx.fillStyle = `hsl(${hue}, ${sat}%, ${light}%)`;
+        ctx.strokeStyle = '#444';
+        ctx.lineWidth = 2.5;
+
+        const cx = W / 2, cy = H / 2;
+        const faceR = 72 * size;
+
+        // Head
+        ctx.beginPath();
+        ctx.arc(cx, cy, faceR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Eyes
+        const eyeOx = 26 * size, eyeOy = -18 * size, eyeR = 9 * size;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(cx - eyeOx, cy + eyeOy, eyeR, 0, Math.PI * 2);
+        ctx.arc(cx + eyeOx, cy + eyeOy, eyeR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Pupils
+        ctx.fillStyle = '#222';
+        const pupilShift = z1 * 3;
+        ctx.beginPath();
+        ctx.arc(cx - eyeOx + pupilShift, cy + eyeOy, eyeR / 2.2, 0, Math.PI * 2);
+        ctx.arc(cx + eyeOx + pupilShift, cy + eyeOy, eyeR / 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyebrows (tilt with z1)
+        ctx.lineWidth = 2.5 * size;
+        ctx.beginPath();
+        ctx.moveTo(cx - eyeOx - eyeR, cy + eyeOy - eyeR - 4 + z1 * 4);
+        ctx.lineTo(cx - eyeOx + eyeR, cy + eyeOy - eyeR - 4 - z1 * 2);
+        ctx.moveTo(cx + eyeOx - eyeR, cy + eyeOy - eyeR - 4 - z1 * 2);
+        ctx.lineTo(cx + eyeOx + eyeR, cy + eyeOy - eyeR - 4 + z1 * 4);
+        ctx.stroke();
+
+        // Nose
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + eyeOy + eyeR + 4);
+        ctx.lineTo(cx - 4 * size, cy + 10 * size);
+        ctx.lineTo(cx + 4 * size, cy + 10 * size);
+        ctx.stroke();
+
+        // Mouth — smile/frown with z1
+        ctx.lineWidth = 2.5;
+        const mouthW = 32 * size;
+        const mouthY = cy + 28 * size;
+        const smile = z1 * 24;
+        ctx.beginPath();
+        ctx.moveTo(cx - mouthW, mouthY);
+        ctx.quadraticCurveTo(cx, mouthY + smile, cx + mouthW, mouthY);
+        ctx.stroke();
+
+        // Blush (subtle)
+        ctx.globalAlpha = 0.18 + z2 * 0.08;
+        ctx.fillStyle = '#e88';
+        ctx.beginPath();
+        ctx.ellipse(cx - eyeOx - 4, cy + 6 * size, 10 * size, 6 * size, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(cx + eyeOx + 4, cy + 6 * size, 10 * size, 6 * size, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Coordinate readout
+        ctx.fillStyle = '#aaa';
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`z₁ = ${z1.toFixed(2)}`, 8, H - 8);
+        ctx.textAlign = 'right';
+        ctx.fillText(`z₂ = ${z2.toFixed(2)}`, W - 8, H - 8);
+    }
+
+    drawFace(0, 0);
+
+    map.addEventListener('mousemove', (e) => {
+        const rect = map.getBoundingClientRect();
+        const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+        const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+        cursor.style.left = x + 'px';
+        cursor.style.top = y + 'px';
+        const z1 = (x / rect.width) * 2 - 1;
+        const z2 = 1 - (y / rect.height) * 2;
+        drawFace(z1, z2);
+    });
+})();
+</script>

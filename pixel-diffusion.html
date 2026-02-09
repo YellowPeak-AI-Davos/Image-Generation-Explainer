@@ -1,0 +1,1011 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Distill Template -->
+<script src="https://distill.pub/template.v1.js"></script>
+
+<!-- jQuery for loading header -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- MathJax for rendering equations -->
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      tags: 'ams'
+    }
+  };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+    /* ── Global custom styles ── */
+    .interactive-container {
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 8px;
+        background: #f9f9f9;
+        padding: 24px;
+        margin: 2rem 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    .interactive-container h4 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #888;
+    }
+    .canvas-wrapper {
+        position: relative;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        background: white;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .control-panel {
+        margin-top: 14px;
+        font-size: 0.9em;
+        color: #555;
+        text-align: center;
+        max-width: 640px;
+    }
+
+    /* ── Derivation steps ── */
+    .derivation-step {
+        background: #f4f8fb;
+        border-left: 4px solid #EBC043;
+        padding: 16px 20px;
+        margin: 1.2rem 0;
+        border-radius: 0 6px 6px 0;
+    }
+    .derivation-step .step-label {
+        font-weight: 700;
+        color: #EBC043;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+
+    /* ── Intuition callout boxes ── */
+    .intuition-box {
+        background: #fffbe6;
+        border: 1px solid #EBC043;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin: 1.5rem 0;
+    }
+    .intuition-box::before {
+        content: '💡 Intuition';
+        display: block;
+        font-weight: 700;
+        font-size: 0.85em;
+        color: #b8941e;
+        margin-bottom: 6px;
+    }
+
+    /* ── Buttons ── */
+    button.train-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: bold;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: transform 0.1s, opacity 0.2s;
+    }
+    button.train-btn:active { transform: scale(0.96); }
+    button.train-btn:disabled { background-color: #ccc !important; color: #888 !important; cursor: not-allowed; }
+    .btn-play { background-color: #22c55e; color: white; }
+    .btn-stop { background-color: #f97316; color: white; }
+    .btn-reset { background-color: #e5e7eb; color: #374151; }
+    .btn-primary { background-color: #3b82f6; color: white; }
+    .btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    /* ── Slider rows ── */
+    .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 8px 0;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .slider-row label {
+        font-weight: 600;
+        min-width: 140px;
+        text-align: right;
+    }
+    .slider-row input[type=range] {
+        width: 240px;
+        accent-color: #EBC043;
+    }
+    .slider-row .val {
+        min-width: 60px;
+        font-family: monospace;
+    }
+
+    /* ── Side-by-side panels ── */
+    .side-panels {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 10px;
+    }
+    .side-panels .panel {
+        text-align: center;
+    }
+    .side-panels .panel canvas {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .side-panels .panel-label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 0.95em;
+    }
+
+    /* ── Step display ── */
+    .step-display {
+        text-align: center;
+        font-family: monospace;
+        color: #555;
+        margin-top: 8px;
+        font-size: 14px;
+    }
+    .epoch-display {
+        font-family: monospace;
+        font-size: 14px;
+        background: #eee;
+        padding: 4px 12px;
+        border-radius: 4px;
+    }
+
+    /* ── Legend ── */
+    .legend {
+        display: flex;
+        gap: 15px;
+        font-size: 12px;
+        margin-bottom: 10px;
+        color: #444;
+    }
+    .legend span { display: flex; align-items: center; gap: 4px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+    /* ── Timeline strip ── */
+    .timeline-strip {
+        display: flex;
+        gap: 4px;
+        margin-top: 10px;
+        overflow-x: auto;
+        padding: 4px 0;
+    }
+    .timeline-strip canvas {
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        flex-shrink: 0;
+    }
+    .timeline-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #888;
+        margin-top: 2px;
+    }
+</style>
+
+<!-- Header -->
+<div id="includedContent"></div>
+<script> 
+    $(function(){
+      $("#includedContent").load("header.html"); 
+    });
+</script> 
+
+<dt-article>
+
+  <h1>Pixel-Space Diffusion Models</h1>
+  <h2>Creating Order from Chaos, One Step at a Time</h2>
+  <hr>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 1 – Motivation                                -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Why Diffusion? The Limitations of GANs and VAEs</h2>
+  <p>
+    We've now seen two paradigms for image generation. <strong>VAEs</strong> are mathematically principled and stable but produce blurry images due to the pixel-wise reconstruction loss. <strong>GANs</strong> produce sharp images via adversarial training but suffer from mode collapse and notoriously unstable training dynamics.
+  </p>
+  <p>
+    Wouldn't it be ideal to have a model that is:
+  </p>
+  <ul>
+    <li><strong>Stable to train</strong> (no adversarial balancing act)?</li>
+    <li><strong>Covers the full distribution</strong> (no mode collapse)?</li>
+    <li>Produces <strong>sharp, high-fidelity images</strong>?</li>
+    <li>Has a principled <strong>probabilistic foundation</strong>?</li>
+  </ul>
+  <p>
+    <strong>Diffusion models</strong> achieve all four. The core idea is beautiful in its simplicity: take data and slowly destroy it by adding noise. Then train a neural network to <em>undo</em> each step of that destruction. Generation is then just running the reverse process starting from pure noise.
+  </p>
+
+  <div class="intuition-box">
+    Imagine a sculptor starting with a rough block of marble (noise) and chipping away a tiny imperfection at each step. After thousands of careful steps, a detailed statue (image) emerges. The neural network learns to be the sculptor — it learns what "imperfection" to remove at each step.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 2 – Physical Intuition                        -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Physical Analogy: Ink in Water</h2>
+  <p>
+    Drop a drop of ink into a glass of water. It slowly diffuses until the water is uniformly colored. This process — increasing entropy — is easy to observe but seemingly impossible to reverse. You cannot "undiffuse" the ink back into a drop.
+  </p>
+  <p>
+    <strong>Diffusion models challenge this intuition.</strong> They learn to reverse the arrow of time. The key insight is that while the <em>physical</em> reverse is intractable, each <em>individual tiny step</em> of the diffusion process is nearly Gaussian. And a Gaussian step <em>can</em> be reversed if you know the local statistics — which is exactly what we train a neural network to estimate.
+  </p>
+  <p>
+    This concept was formalized as <strong>Denoising Diffusion Probabilistic Models (DDPMs)</strong> by Ho, Jain, and Abbeel (2020), building on earlier work by Sohl-Dickstein et al. (2015).
+  </p>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 3 – Forward Process                           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Forward Process: Systematic Destruction</h2>
+  <p>
+    The forward process (or <em>diffusion process</em>) is a fixed Markov chain that gradually adds Gaussian noise to the data over $T$ timesteps, according to a <strong>variance schedule</strong> $\beta_1, \beta_2, \dots, \beta_T$ where each $\beta_t \in (0, 1)$.
+  </p>
+
+  <h3>Step-by-step noising</h3>
+  <p>
+    Given a clean image $x_0 \sim q(x_0)$, each step adds a small amount of Gaussian noise:
+  </p>
+  <p>
+    $$q(x_t \mid x_{t-1}) = \mathcal{N}\!\left(x_t;\; \sqrt{1 - \beta_t}\, x_{t-1},\; \beta_t \mathbf{I}\right)$$
+  </p>
+  <p>
+    This means: scale the previous image by $\sqrt{1 - \beta_t}$ (slightly shrink toward zero) and add noise with variance $\beta_t$. As $t$ increases, the signal is progressively destroyed.
+  </p>
+
+  <h3>The key trick: jump to any timestep directly</h3>
+  <p>
+    Running the chain step-by-step $T$ times would be expensive. Fortunately, the composition of Gaussian noise steps has a beautiful closed form.
+  </p>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 1 — Define cumulative products</div>
+    <p>
+      Let $\alpha_t = 1 - \beta_t$ and define the cumulative product:
+    </p>
+    <p>
+      $$\bar{\alpha}_t = \prod_{s=1}^{t} \alpha_s = \prod_{s=1}^{t} (1 - \beta_s)$$
+    </p>
+    <p>
+      As $t \to T$, $\bar{\alpha}_t \to 0$, meaning the original signal vanishes completely.
+    </p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 2 — Closed-form sampling at any $t$</div>
+    <p>
+      By repeatedly applying the reparameterization trick and collapsing the Gaussian product, we get:
+    </p>
+    <p>
+      $$\boxed{q(x_t \mid x_0) = \mathcal{N}\!\left(x_t;\; \sqrt{\bar{\alpha}_t}\, x_0,\; (1 - \bar{\alpha}_t)\, \mathbf{I}\right)}$$
+    </p>
+    <p>
+      Or equivalently, we can directly sample:
+    </p>
+    <p>
+      $$x_t = \sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1 - \bar{\alpha}_t}\, \epsilon, \qquad \epsilon \sim \mathcal{N}(0, \mathbf{I})$$
+    </p>
+  </div>
+
+  <div class="intuition-box">
+    This formula is the workhorse of DDPM training. During training, we don't need to simulate the full chain. We just sample a random timestep $t$, apply the closed-form formula to get $x_t$, then ask the network to predict $\epsilon$. This makes training extremely efficient — each forward pass is just a single noising operation plus a network evaluation.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  Interactive 1: Forward Process Visualization           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Interactive: The Forward Process</h2>
+  <p>
+    Drag the slider to apply the forward diffusion formula $x_t = \sqrt{\bar\alpha_t}\, x_0 + \sqrt{1 - \bar\alpha_t}\, \epsilon$. Watch the image progressively dissolve into noise. Click <strong>Denoise</strong> to animate the reverse process.
+  </p>
+
+  <div class="interactive-container" id="forwardContainer">
+    <h4>Interactive · Forward &amp; Reverse Diffusion on an Image</h4>
+    <div class="canvas-wrapper">
+      <canvas id="diffusionCanvas" width="300" height="300"></canvas>
+    </div>
+    <div class="slider-row" style="margin-top: 14px;">
+      <label>Timestep $t$:</label>
+      <input type="range" min="0" max="100" value="0" id="noiseSlider">
+      <span class="val" id="stepDisplay">0</span>
+    </div>
+    <div class="btn-row">
+      <button class="train-btn btn-play" id="denoiseBtn" onclick="DiffDemo.denoise()">▶ Denoise (Reverse)</button>
+      <button class="train-btn btn-primary" id="noiseFullBtn" onclick="DiffDemo.noiseAll()">Noise to $T$</button>
+      <button class="train-btn btn-reset" onclick="DiffDemo.reset()">Reset</button>
+    </div>
+    <div class="step-display" id="scheduleInfo" style="margin-top:6px;"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 4 – Noise Schedules                           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Noise Schedule $\beta_t$</h2>
+  <p>
+    The choice of $\beta_t$ values — the <strong>noise schedule</strong> — critically affects generation quality. Common schedules include:
+  </p>
+  <ul>
+    <li><strong>Linear schedule</strong> (DDPM): $\beta_t$ increases linearly from $\beta_1 = 10^{-4}$ to $\beta_T = 0.02$. Simple but wastes early steps where the image is barely noised.</li>
+    <li><strong>Cosine schedule</strong> (Improved DDPM, Nichol & Dhariwal 2021): $\bar\alpha_t$ follows a cosine curve, giving a more gradual destruction that preserves signal longer, improving generation quality.</li>
+  </ul>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  Interactive 2: Noise Schedule Comparison               -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <div class="interactive-container" id="scheduleContainer">
+    <h4>Interactive · Noise Schedule Comparison</h4>
+    <div class="legend">
+      <span><div class="dot" style="background:#3b82f6"></div> Linear $\bar\alpha_t$</span>
+      <span><div class="dot" style="background:#ef4444"></div> Cosine $\bar\alpha_t$</span>
+      <span><div class="dot" style="background:#888"></div> $\bar\alpha_t = 0$ (pure noise)</span>
+    </div>
+    <div class="canvas-wrapper">
+      <canvas id="scheduleCanvas" width="520" height="240"></canvas>
+    </div>
+    <div class="slider-row">
+      <label>Total steps $T$:</label>
+      <input type="range" min="50" max="1000" step="50" value="1000" id="totalStepsSlider">
+      <span class="val" id="totalStepsVal">1000</span>
+    </div>
+    <div class="control-panel">
+      <p>The cosine schedule preserves more signal at early timesteps (higher $\bar\alpha_t$), giving the model more useful structure to learn from during training.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 5 – Reverse Process                           -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Reverse Process: Learning to Denoise</h2>
+  <p>
+    The forward process is fixed and requires no learning. The <strong>reverse process</strong> is where the magic happens. We want to learn:
+  </p>
+  <p>
+    $$p_\theta(x_{t-1} \mid x_t) = \mathcal{N}\!\left(x_{t-1};\; \mu_\theta(x_t, t),\; \Sigma_\theta(x_t, t)\right)$$
+  </p>
+  <p>
+    This says: given a noisy image $x_t$ and the current timestep $t$, predict the mean (and optionally the variance) of the slightly-less-noisy image $x_{t-1}$.
+  </p>
+
+  <h3>Why does this work?</h3>
+  <p>
+    A key theoretical result justifies this approach: when $\beta_t$ is small enough, the reverse of each forward step $q(x_{t-1} \mid x_t)$ is <em>also approximately Gaussian</em>. So we can parameterize the reverse as a Gaussian and it will be a good fit.
+  </p>
+
+  <div class="intuition-box">
+    Each forward step adds a <em>tiny</em> amount of noise. Reversing a tiny perturbation is well-approximated by a Gaussian correction. It's like asking: "If I slightly blurred this photo, what did it look like one step ago?" That's a much easier question than "Generate a realistic photo from scratch."
+  </div>
+
+  <h3>The true reverse posterior (when we know $x_0$)</h3>
+  <p>
+    While we can't compute $q(x_{t-1} \mid x_t)$ directly (it requires integrating over all possible $x_0$), we <em>can</em> compute the <strong>posterior conditioned on $x_0$</strong>:
+  </p>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 3 — The tractable reverse posterior</div>
+    <p>
+      Using Bayes' rule on the Markov chain:
+    </p>
+    <p>
+      $$q(x_{t-1} \mid x_t, x_0) = \mathcal{N}\!\left(x_{t-1};\; \tilde{\mu}_t(x_t, x_0),\; \tilde{\beta}_t \mathbf{I}\right)$$
+    </p>
+    <p>where:</p>
+    <p>
+      $$\tilde{\mu}_t(x_t, x_0) = \frac{\sqrt{\bar{\alpha}_{t-1}}\, \beta_t}{1 - \bar{\alpha}_t}\, x_0 + \frac{\sqrt{\alpha_t}\,(1 - \bar{\alpha}_{t-1})}{1 - \bar{\alpha}_t}\, x_t$$
+    </p>
+    <p>
+      $$\tilde{\beta}_t = \frac{1 - \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t}\, \beta_t$$
+    </p>
+    <p>
+      This tells us the <em>exact</em> reverse step — but it requires knowing $x_0$, which is what we're trying to generate!
+    </p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 4 — Reparameterize in terms of noise $\epsilon$</div>
+    <p>
+      From the forward process, $x_0 = \frac{1}{\sqrt{\bar{\alpha}_t}}(x_t - \sqrt{1 - \bar{\alpha}_t}\, \epsilon)$. Substituting into $\tilde{\mu}_t$:
+    </p>
+    <p>
+      $$\tilde{\mu}_t = \frac{1}{\sqrt{\alpha_t}}\left(x_t - \frac{\beta_t}{\sqrt{1 - \bar{\alpha}_t}}\, \epsilon\right)$$
+    </p>
+    <p>
+      Since we don't know the true $\epsilon$ that was used, we train a neural network $\epsilon_\theta(x_t, t)$ to predict it. The network's predicted mean becomes:
+    </p>
+    <p>
+      $$\boxed{\mu_\theta(x_t, t) = \frac{1}{\sqrt{\alpha_t}}\left(x_t - \frac{\beta_t}{\sqrt{1 - \bar{\alpha}_t}}\, \epsilon_\theta(x_t, t)\right)}$$
+    </p>
+  </div>
+
+  <div class="intuition-box">
+    Instead of directly predicting the clean image or the reverse mean, the network predicts the <em>noise</em> $\epsilon$ that was added. This is equivalent but empirically works much better — noise prediction is a simpler, more uniform task across all timesteps.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 6 – The Loss Function (VLB)                   -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Deriving the Training Loss</h2>
+  <p>
+    Like VAEs, diffusion models are trained by maximizing a <strong>variational lower bound</strong> (VLB) on the log-likelihood. But the final simplified loss is astonishingly simple.
+  </p>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 5 — The variational lower bound</div>
+    <p>
+      Starting from $\log p_\theta(x_0)$ and applying Jensen's inequality (the same technique as the VAE ELBO), the VLB decomposes into a sum of KL divergences — one for each timestep:
+    </p>
+    <p>
+      $$\log p_\theta(x_0) \geq \mathbb{E}_q\!\left[-\log \frac{q(x_{1:T} \mid x_0)}{p_\theta(x_{0:T})}\right]$$
+    </p>
+    <p>
+      This can be rewritten as:
+    </p>
+    <p>
+      $$= \underbrace{-D_{\text{KL}}(q(x_T \mid x_0)\, \|\, p(x_T))}_{L_T\, \text{(prior matching)}} + \sum_{t=2}^{T} \underbrace{-D_{\text{KL}}(q(x_{t-1} \mid x_t, x_0)\, \|\, p_\theta(x_{t-1} \mid x_t))}_{L_{t-1}\, \text{(denoising matching)}} + \underbrace{\mathbb{E}_q[\log p_\theta(x_0 \mid x_1)]}_{L_0\, \text{(reconstruction)}}$$
+    </p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 6 — The simplified objective</div>
+    <p>
+      Ho et al. (2020) showed that each KL term $L_{t-1}$ reduces to comparing the means of two Gaussians, and since both means are functions of $\epsilon$, the loss simplifies to:
+    </p>
+    <p>
+      $$\boxed{\mathcal{L}_{\text{simple}} = \mathbb{E}_{t \sim \mathcal{U}(1,T),\; x_0,\; \epsilon \sim \mathcal{N}(0,\mathbf{I})}\!\left[\left\|\epsilon - \epsilon_\theta\!\left(\sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1-\bar{\alpha}_t}\, \epsilon,\; t\right)\right\|^2\right]}$$
+    </p>
+    <p>
+      In plain English: sample a random training image $x_0$, a random timestep $t$, and random noise $\epsilon$. Noise the image to get $x_t$. Ask the network to predict $\epsilon$. Minimize the mean squared error.
+    </p>
+  </div>
+
+  <div class="intuition-box">
+    The training algorithm is remarkably simple: (1) pick an image, (2) pick a random noise level, (3) add the noise, (4) train the network to predict what noise was added. Repeat billions of times. That's it. No adversarial games, no reconstruction-vs-regularization tradeoff. Just predict the noise.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  Interactive 3: Training Loop Simulation                -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Interactive: One Training Step</h2>
+  <p>
+    This demo illustrates a single DDPM training step. Press <strong>Sample Step</strong> to: (1) pick a random $t$, (2) noise the image, (3) show the network's noise prediction (simulated), and (4) compute the MSE loss.
+  </p>
+
+  <div class="interactive-container" id="trainStepContainer">
+    <h4>Interactive · A Single DDPM Training Step</h4>
+    <div class="side-panels" id="trainPanels">
+      <div class="panel">
+        <div class="panel-label">$x_0$ (clean)</div>
+        <canvas id="trainClean" width="140" height="140"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-label">$\epsilon$ (true noise)</div>
+        <canvas id="trainNoise" width="140" height="140"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-label">$x_t$ (noised)</div>
+        <canvas id="trainNoised" width="140" height="140"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-label">$\hat\epsilon_\theta$ (predicted)</div>
+        <canvas id="trainPred" width="140" height="140"></canvas>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="train-btn btn-primary" onclick="TrainStep.sample()">Sample Step</button>
+      <span class="epoch-display" id="trainInfo">Press to start</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 7 – U-Net Architecture                        -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Network: U-Net with Time Conditioning</h2>
+  <p>
+    The noise predictor $\epsilon_\theta(x_t, t)$ is typically a <strong>U-Net</strong> — an encoder-decoder architecture with skip connections, originally designed for image segmentation.
+  </p>
+  <ul>
+    <li>The <strong>encoder</strong> progressively downsamples the noisy image through convolutional blocks, capturing features at multiple scales.</li>
+    <li>The <strong>decoder</strong> upsamples back to the original resolution, using skip connections to preserve spatial detail.</li>
+    <li><strong>Time conditioning</strong> is injected at every layer via sinusoidal position embeddings of $t$ (similar to Transformers), allowing the network to adjust its denoising strategy based on the noise level.</li>
+    <li><strong>Self-attention layers</strong> are added at lower resolutions to capture long-range dependencies.</li>
+  </ul>
+  <p>
+    The input and output have the <strong>same shape</strong> — the network takes a noisy image and outputs a noise map of the same dimensions.
+  </p>
+
+  <div class="intuition-box">
+    The U-Net doesn't know it's generating images. From its perspective, it's just doing denoising: "Given this noisy picture, what's the noise?" The remarkable fact is that by learning to denoise at every noise level, the network implicitly learns the <em>entire data distribution</em>.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 8 – Sampling / Generation                     -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Generating Images: The Reverse Markov Chain</h2>
+  <p>
+    To generate an image, we start from pure Gaussian noise $x_T \sim \mathcal{N}(0, \mathbf{I})$ and iteratively apply the learned reverse step:
+  </p>
+  <p>
+    $$x_{t-1} = \frac{1}{\sqrt{\alpha_t}}\left(x_t - \frac{\beta_t}{\sqrt{1 - \bar{\alpha}_t}}\, \epsilon_\theta(x_t, t)\right) + \sqrt{\beta_t}\, z, \qquad z \sim \mathcal{N}(0, \mathbf{I})$$
+  </p>
+  <p>
+    This is repeated for $t = T, T-1, \dots, 1$. Each step removes a small amount of noise and adds a small amount of fresh stochasticity (the $z$ term), which gives the generation process its richness and diversity.
+  </p>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  Interactive 4: Step-by-Step Reverse Process            -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Interactive: Step-by-Step Generation</h2>
+  <p>
+    Watch an image materialize from pure noise. Each frame represents a denoising step. Notice how <strong>global structure</strong> (sky, ground, shape) emerges early, while <strong>fine details</strong> (edges, textures) appear in the later steps.
+  </p>
+
+  <div class="interactive-container" id="genContainer">
+    <h4>Interactive · Iterative Denoising (Image Generation)</h4>
+    <div class="canvas-wrapper">
+      <canvas id="genCanvas" width="300" height="300"></canvas>
+    </div>
+    <div class="slider-row" style="margin-top: 14px;">
+      <label>Step (of 100):</label>
+      <input type="range" min="0" max="100" value="0" id="genSlider" disabled>
+      <span class="val" id="genStepVal">0</span>
+    </div>
+    <div class="btn-row">
+      <button class="train-btn btn-play" id="genBtn" onclick="GenDemo.start()">▶ Generate</button>
+      <button class="train-btn btn-reset" onclick="GenDemo.reset()">Reset</button>
+      <span class="epoch-display" id="genInfo">Press Generate to begin</span>
+    </div>
+    <div class="timeline-strip" id="genTimeline"></div>
+    <div class="timeline-labels" id="genTimeLabels" style="width:100%;max-width:600px;"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 9 – Sampling Speed                            -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Speed Problem</h2>
+  <p>
+    The major drawback of pixel-space DDPM is <strong>speed</strong>. Generating a single image requires running the U-Net $T$ times (typically $T = 1000$). For a $256 \times 256$ image, this means $1000$ forward passes through a large neural network, each operating on $256 \times 256 \times 3 = 196{,}608$ values.
+  </p>
+  <p>
+    This leads to generation times of <strong>minutes per image</strong> — orders of magnitude slower than GANs (which generate in a single pass) and impractical for consumer applications.
+  </p>
+
+  <h3>Approaches to accelerating sampling</h3>
+  <ul>
+    <li><strong>DDIM</strong> (Song et al. 2020): A non-Markovian sampling process that can skip steps, reducing $T$ from 1000 to ~50 with minimal quality loss.</li>
+    <li><strong>Progressive distillation</strong>: Train a student model to do in one step what the teacher does in two, iteratively halving the number of steps.</li>
+    <li><strong>Latent Diffusion</strong>: Instead of diffusing in pixel space, compress the image first and diffuse in a much smaller latent space. This is the breakthrough that made Stable Diffusion possible — and our next topic.</li>
+  </ul>
+
+  <div class="intuition-box">
+    The fundamental bottleneck is that diffusion operates on <em>every pixel</em>. A $1024 \times 1024$ RGB image has over 3 million values — and the U-Net must process all of them at every step. Latent Diffusion solves this by first compressing the image to a latent space (e.g., $64 \times 64 \times 4 = 16{,}384$ values), achieving a ~200× reduction in the dimensionality of the diffusion process.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 10 – Summary                                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Summary &amp; Looking Ahead</h2>
+  <p>
+    Pixel-space Diffusion Models (DDPMs) marked a turning point in generative AI:
+  </p>
+  <ul>
+    <li><strong>Stable training:</strong> No adversarial dynamics — just minimize MSE on noise prediction.</li>
+    <li><strong>Full distribution coverage:</strong> No mode collapse — the iterative process naturally explores the full data manifold.</li>
+    <li><strong>State-of-the-art quality:</strong> Beat GANs on FID scores while covering more of the distribution.</li>
+    <li><strong>Principled foundations:</strong> Grounded in variational inference with a clean decomposition of the VLB.</li>
+  </ul>
+  <p>
+    The cost of these advantages is <strong>slow generation</strong>: hundreds of sequential network evaluations in high-dimensional pixel space. The solution is to move the diffusion process into a compressed <strong>latent space</strong> — which is exactly what we explore next.
+  </p>
+
+</dt-article>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  ALL INTERACTIVE SCRIPTS                                   -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script>
+// ─── Shared utility: generate the base "sunset" image ───
+function createBaseImage(size) {
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const cx = c.getContext('2d');
+    const grad = cx.createLinearGradient(0, 0, 0, size);
+    grad.addColorStop(0, '#3b82f6');
+    grad.addColorStop(0.5, '#f472b6');
+    grad.addColorStop(1, '#1e1b4b');
+    cx.fillStyle = grad;
+    cx.fillRect(0, 0, size, size);
+    // Sun
+    cx.beginPath();
+    cx.arc(size/2, size/2 + 20, size*0.2, 0, Math.PI*2);
+    cx.fillStyle = '#fbbf24'; cx.fill();
+    // Mountains
+    cx.beginPath();
+    cx.moveTo(0, size);
+    cx.lineTo(size*0.33, size*0.5);
+    cx.lineTo(size*0.66, size*0.65);
+    cx.lineTo(size, size*0.4);
+    cx.lineTo(size, size);
+    cx.fillStyle = '#111827'; cx.fill();
+    return cx.getImageData(0, 0, size, size);
+}
+
+// ─── Shared utility: generate Gaussian noise buffer ───
+function createNoiseBuffer(len) {
+    const buf = new Float32Array(len);
+    for (let i = 0; i < len; i++) buf[i] = (Math.random() - 0.5) * 2.5 * 255;
+    return buf;
+}
+
+// ─── Shared utility: cosine schedule ───
+function cosineAlphaBar(t, T) {
+    const s = 0.008;
+    const f = (x) => Math.cos(((x / T) + s) / (1 + s) * Math.PI / 2) ** 2;
+    return f(t) / f(0);
+}
+function linearAlphaBar(t, T) {
+    // Linear beta from 1e-4 to 0.02
+    let ab = 1;
+    for (let s = 1; s <= t; s++) {
+        const beta = 1e-4 + (0.02 - 1e-4) * (s - 1) / (T - 1);
+        ab *= (1 - beta);
+    }
+    return ab;
+}
+
+// ═══════════════════════════════════════════
+// 1. Forward & Reverse Diffusion Demo
+// ═══════════════════════════════════════════
+const DiffDemo = (function() {
+    const canvas = document.getElementById('diffusionCanvas');
+    const ctx = canvas.getContext('2d');
+    const slider = document.getElementById('noiseSlider');
+    const display = document.getElementById('stepDisplay');
+    const schedInfo = document.getElementById('scheduleInfo');
+    const denoiseBtn = document.getElementById('denoiseBtn');
+    const size = 300;
+
+    const cleanData = createBaseImage(size);
+    const noiseBuf = createNoiseBuffer(size * size * 4);
+
+    function render(t) {
+        const progress = t / 100;
+        // Cosine schedule for better visual
+        const alphaBar = cosineAlphaBar(Math.round(t * 10), 1000);
+        const sigStrength = Math.sqrt(alphaBar);
+        const noiseStrength = Math.sqrt(1 - alphaBar);
+
+        const out = ctx.createImageData(size, size);
+        const d = out.data;
+        for (let i = 0; i < d.length; i += 4) {
+            d[i]   = Math.min(255, Math.max(0, cleanData.data[i]   * sigStrength + noiseBuf[i]   * noiseStrength));
+            d[i+1] = Math.min(255, Math.max(0, cleanData.data[i+1] * sigStrength + noiseBuf[i+1] * noiseStrength));
+            d[i+2] = Math.min(255, Math.max(0, cleanData.data[i+2] * sigStrength + noiseBuf[i+2] * noiseStrength));
+            d[i+3] = 255;
+        }
+        ctx.putImageData(out, 0, 0);
+        display.textContent = t;
+        schedInfo.textContent = `√ᾱ_t = ${sigStrength.toFixed(3)},  √(1−ᾱ_t) = ${noiseStrength.toFixed(3)}`;
+    }
+
+    slider.addEventListener('input', () => render(parseInt(slider.value)));
+    render(0);
+
+    function denoise() {
+        denoiseBtn.disabled = true;
+        slider.disabled = true;
+        let curr = parseInt(slider.value);
+        if (curr === 0) { curr = 100; render(100); }
+        function step() {
+            if (curr > 0) { curr--; slider.value = curr; render(curr); requestAnimationFrame(step); }
+            else { denoiseBtn.disabled = false; slider.disabled = false; }
+        }
+        requestAnimationFrame(step);
+    }
+
+    function noiseAll() {
+        slider.value = 100; render(100);
+    }
+
+    function reset() {
+        slider.value = 0; render(0);
+        denoiseBtn.disabled = false;
+        slider.disabled = false;
+    }
+
+    return { denoise, noiseAll, reset };
+})();
+
+// ═══════════════════════════════════════════
+// 2. Noise Schedule Comparison
+// ═══════════════════════════════════════════
+(function() {
+    const canvas = document.getElementById('scheduleCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = 520, H = 240;
+    const slider = document.getElementById('totalStepsSlider');
+    const valSpan = document.getElementById('totalStepsVal');
+
+    function draw() {
+        const T = parseInt(slider.value);
+        valSpan.textContent = T;
+        ctx.clearRect(0, 0, W, H);
+
+        const pad = 40;
+        const pw = W - 2 * pad;
+        const ph = H - 2 * pad;
+
+        // Axes
+        ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad, H - pad); ctx.lineTo(W - pad, H - pad);
+        ctx.moveTo(pad, H - pad); ctx.lineTo(pad, pad);
+        ctx.stroke();
+
+        ctx.fillStyle = '#999'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('Timestep t', W / 2, H - 6);
+        ctx.save(); ctx.translate(12, H / 2); ctx.rotate(-Math.PI/2);
+        ctx.fillText('ᾱ_t (signal remaining)', 0, 0); ctx.restore();
+
+        // Tick marks
+        ctx.fillStyle = '#bbb'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+        for (let f = 0; f <= 1; f += 0.25) {
+            const x = pad + f * pw;
+            const y = H - pad;
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 4); ctx.stroke();
+            ctx.fillText(Math.round(f * T), x, y + 14);
+        }
+        ctx.textAlign = 'right';
+        for (let v = 0; v <= 1; v += 0.25) {
+            const y = (H - pad) - v * ph;
+            ctx.beginPath(); ctx.moveTo(pad - 4, y); ctx.lineTo(pad, y); ctx.stroke();
+            ctx.fillText(v.toFixed(2), pad - 6, y + 3);
+        }
+
+        // Zero line
+        const zeroY = (H - pad);
+        ctx.strokeStyle = '#ddd'; ctx.setLineDash([2,3]);
+        ctx.beginPath(); ctx.moveTo(pad, zeroY); ctx.lineTo(W-pad, zeroY); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Linear schedule
+        ctx.beginPath(); ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2.5;
+        const linSamples = 200;
+        for (let i = 0; i <= linSamples; i++) {
+            const t = Math.round((i / linSamples) * T);
+            const ab = linearAlphaBar(t, T);
+            const x = pad + (i / linSamples) * pw;
+            const y = (H - pad) - ab * ph;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Cosine schedule
+        ctx.beginPath(); ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2.5;
+        for (let i = 0; i <= linSamples; i++) {
+            const t = Math.round((i / linSamples) * T);
+            const ab = cosineAlphaBar(t, T);
+            const x = pad + (i / linSamples) * pw;
+            const y = (H - pad) - ab * ph;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Labels
+        ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
+        ctx.fillStyle = '#3b82f6'; ctx.fillText('Linear', pad + 10, pad + 16);
+        ctx.fillStyle = '#ef4444'; ctx.fillText('Cosine', pad + 10, pad + 32);
+    }
+
+    slider.addEventListener('input', draw);
+    draw();
+})();
+
+// ═══════════════════════════════════════════
+// 3. Training Step Simulation
+// ═══════════════════════════════════════════
+const TrainStep = (function() {
+    const cleanCanvas = document.getElementById('trainClean');
+    const noiseCanvas = document.getElementById('trainNoise');
+    const noisedCanvas = document.getElementById('trainNoised');
+    const predCanvas = document.getElementById('trainPred');
+    const info = document.getElementById('trainInfo');
+    if (!cleanCanvas) return { sample: () => {} };
+
+    const sz = 140;
+    const cleanData = createBaseImage(sz);
+
+    // Draw clean image once
+    const cleanCtx = cleanCanvas.getContext('2d');
+    cleanCtx.putImageData(cleanData, 0, 0);
+
+    function sample() {
+        const t = Math.floor(Math.random() * 99) + 1; // 1..99
+        const T = 1000;
+        const tScaled = Math.round(t / 100 * T);
+        const alphaBar = cosineAlphaBar(tScaled, T);
+        const sig = Math.sqrt(alphaBar);
+        const noi = Math.sqrt(1 - alphaBar);
+
+        // True noise
+        const noiseBuf = createNoiseBuffer(sz * sz * 4);
+        const noiseCtx = noiseCanvas.getContext('2d');
+        const noiseImg = noiseCtx.createImageData(sz, sz);
+        for (let i = 0; i < noiseImg.data.length; i += 4) {
+            const v = Math.min(255, Math.max(0, 128 + noiseBuf[i] * 0.4));
+            noiseImg.data[i] = v; noiseImg.data[i+1] = v; noiseImg.data[i+2] = v; noiseImg.data[i+3] = 255;
+        }
+        noiseCtx.putImageData(noiseImg, 0, 0);
+
+        // Noised image
+        const noisedCtx = noisedCanvas.getContext('2d');
+        const noisedImg = noisedCtx.createImageData(sz, sz);
+        for (let i = 0; i < noisedImg.data.length; i += 4) {
+            noisedImg.data[i]   = Math.min(255, Math.max(0, cleanData.data[i]   * sig + noiseBuf[i]   * noi));
+            noisedImg.data[i+1] = Math.min(255, Math.max(0, cleanData.data[i+1] * sig + noiseBuf[i+1] * noi));
+            noisedImg.data[i+2] = Math.min(255, Math.max(0, cleanData.data[i+2] * sig + noiseBuf[i+2] * noi));
+            noisedImg.data[i+3] = 255;
+        }
+        noisedCtx.putImageData(noisedImg, 0, 0);
+
+        // Predicted noise (simulated: true noise + small error)
+        const predCtx = predCanvas.getContext('2d');
+        const predImg = predCtx.createImageData(sz, sz);
+        const mseAccum = [0, 0];
+        for (let i = 0; i < predImg.data.length; i += 4) {
+            const err = (Math.random() - 0.5) * 40;
+            const v = Math.min(255, Math.max(0, 128 + (noiseBuf[i] * 0.4) + err));
+            predImg.data[i] = v; predImg.data[i+1] = v; predImg.data[i+2] = v; predImg.data[i+3] = 255;
+            mseAccum[0] += err * err;
+            mseAccum[1]++;
+        }
+        predCtx.putImageData(predImg, 0, 0);
+
+        const mse = (mseAccum[0] / mseAccum[1]).toFixed(1);
+        info.textContent = `t = ${t},  √ᾱ_t = ${sig.toFixed(3)},  MSE = ${mse}`;
+    }
+
+    return { sample };
+})();
+
+// ═══════════════════════════════════════════
+// 4. Step-by-Step Generation Demo
+// ═══════════════════════════════════════════
+const GenDemo = (function() {
+    const canvas = document.getElementById('genCanvas');
+    const slider = document.getElementById('genSlider');
+    const stepVal = document.getElementById('genStepVal');
+    const genBtn = document.getElementById('genBtn');
+    const genInfo = document.getElementById('genInfo');
+    const timeline = document.getElementById('genTimeline');
+    const timeLabels = document.getElementById('genTimeLabels');
+    if (!canvas) return { start: () => {}, reset: () => {} };
+
+    const ctx = canvas.getContext('2d');
+    const size = 300;
+    const totalSteps = 100;
+
+    const cleanData = createBaseImage(size);
+    const noiseBuf = createNoiseBuffer(size * size * 4);
+
+    // Pre-compute frames for the reverse process
+    let frames = []; // array of ImageData
+
+    function precomputeFrames() {
+        frames = [];
+        for (let step = 0; step <= totalSteps; step++) {
+            const t = totalSteps - step; // reverse: step 0 = pure noise, step 100 = clean
+            const tScaled = Math.round(t / totalSteps * 1000);
+            const alphaBar = cosineAlphaBar(tScaled, 1000);
+            const sig = Math.sqrt(alphaBar);
+            const noi = Math.sqrt(1 - alphaBar);
+
+            const img = ctx.createImageData(size, size);
+            for (let i = 0; i < img.data.length; i += 4) {
+                img.data[i]   = Math.min(255, Math.max(0, cleanData.data[i]   * sig + noiseBuf[i]   * noi));
+                img.data[i+1] = Math.min(255, Math.max(0, cleanData.data[i+1] * sig + noiseBuf[i+1] * noi));
+                img.data[i+2] = Math.min(255, Math.max(0, cleanData.data[i+2] * sig + noiseBuf[i+2] * noi));
+                img.data[i+3] = 255;
+            }
+            frames.push(img);
+        }
+    }
+
+    function renderStep(step) {
+        if (!frames.length) precomputeFrames();
+        ctx.putImageData(frames[step], 0, 0);
+        stepVal.textContent = step;
+        slider.value = step;
+        genInfo.textContent = `Denoising step ${step} / ${totalSteps}`;
+    }
+
+    // Show pure noise initially
+    function reset() {
+        if (!frames.length) precomputeFrames();
+        renderStep(0);
+        slider.disabled = true;
+        genBtn.disabled = false;
+        genBtn.textContent = '▶ Generate';
+        timeline.innerHTML = '';
+        timeLabels.innerHTML = '';
+    }
+
+    function start() {
+        if (!frames.length) precomputeFrames();
+        genBtn.disabled = true;
+        slider.disabled = false;
+        timeline.innerHTML = '';
+        timeLabels.innerHTML = '';
+        let step = 0;
+        const snapshotSteps = [0, 10, 25, 50, 75, 90, 100];
+
+        function tick() {
+            renderStep(step);
+            // Capture timeline snapshot
+            if (snapshotSteps.includes(step)) {
+                const thumb = document.createElement('canvas');
+                thumb.width = 60; thumb.height = 60;
+                const tc = thumb.getContext('2d');
+                tc.drawImage(canvas, 0, 0, size, size, 0, 0, 60, 60);
+                timeline.appendChild(thumb);
+            }
+            if (step < totalSteps) {
+                step++;
+                setTimeout(tick, 30);
+            } else {
+                genBtn.disabled = false;
+                genBtn.textContent = '▶ Generate Again';
+                slider.addEventListener('input', () => renderStep(parseInt(slider.value)));
+                // Labels
+                timeLabels.innerHTML = '<span>$x_T$ (noise)</span><span style="text-align:right">$x_0$ (clean)</span>';
+                timeLabels.style.display = 'flex';
+                timeLabels.style.justifyContent = 'space-between';
+            }
+        }
+        tick();
+    }
+
+    precomputeFrames();
+    renderStep(0);
+
+    return { start, reset };
+})();
+</script>

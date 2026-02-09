@@ -1,0 +1,1096 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Distill Template -->
+<script src="https://distill.pub/template.v1.js"></script>
+
+<!-- jQuery for loading header -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- MathJax for rendering equations -->
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      tags: 'ams'
+    }
+  };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+    /* ── Global custom styles ── */
+    .interactive-container {
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 8px;
+        background: #f9f9f9;
+        padding: 24px;
+        margin: 2rem 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+    .interactive-container h4 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #888;
+    }
+    .canvas-wrapper {
+        position: relative;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        background: white;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .control-panel {
+        margin-top: 14px;
+        font-size: 0.9em;
+        color: #555;
+        text-align: center;
+        max-width: 640px;
+    }
+
+    /* ── Derivation steps ── */
+    .derivation-step {
+        background: #f4f8fb;
+        border-left: 4px solid #EBC043;
+        padding: 16px 20px;
+        margin: 1.2rem 0;
+        border-radius: 0 6px 6px 0;
+    }
+    .derivation-step .step-label {
+        font-weight: 700;
+        color: #EBC043;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+
+    /* ── Intuition callout boxes ── */
+    .intuition-box {
+        background: #fffbe6;
+        border: 1px solid #EBC043;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin: 1.5rem 0;
+    }
+    .intuition-box::before {
+        content: '💡 Intuition';
+        display: block;
+        font-weight: 700;
+        font-size: 0.85em;
+        color: #b8941e;
+        margin-bottom: 6px;
+    }
+
+    /* ── Buttons ── */
+    button.train-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: bold;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: transform 0.1s, opacity 0.2s;
+    }
+    button.train-btn:active { transform: scale(0.96); }
+    button.train-btn:disabled { background-color: #ccc !important; color: #888 !important; cursor: not-allowed; }
+    .btn-play { background-color: #22c55e; color: white; }
+    .btn-stop { background-color: #f97316; color: white; }
+    .btn-reset { background-color: #e5e7eb; color: #374151; }
+    .btn-primary { background-color: #6366f1; color: white; }
+    .btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    /* ── Slider rows ── */
+    .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 8px 0;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .slider-row label {
+        font-weight: 600;
+        min-width: 160px;
+        text-align: right;
+    }
+    .slider-row input[type=range] {
+        width: 240px;
+        accent-color: #EBC043;
+    }
+    .slider-row .val {
+        min-width: 60px;
+        font-family: monospace;
+    }
+
+    /* ── Pipeline layout ── */
+    .pipeline-stages {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin: 10px 0;
+    }
+    .stage {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+    .stage-label {
+        font-weight: bold;
+        color: #555;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .stage-sublabel {
+        font-size: 10px;
+        color: #888;
+        font-weight: normal;
+    }
+    .arrow { font-size: 28px; color: #aaa; padding-top: 18px; }
+    canvas.latent-cv { image-rendering: pixelated; }
+
+    /* ── Side panels ── */
+    .side-panels {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 10px;
+    }
+    .side-panels .panel { text-align: center; }
+    .side-panels .panel canvas { border: 1px solid #ccc; border-radius: 4px; }
+    .side-panels .panel-label { font-weight: 600; margin-bottom: 8px; font-size: 0.95em; }
+
+    /* ── Legend ── */
+    .legend {
+        display: flex;
+        gap: 15px;
+        font-size: 12px;
+        margin-bottom: 10px;
+        color: #444;
+    }
+    .legend span { display: flex; align-items: center; gap: 4px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+    .epoch-display {
+        font-family: monospace;
+        font-size: 14px;
+        background: #eee;
+        padding: 4px 12px;
+        border-radius: 4px;
+    }
+    .status-text {
+        margin-top: 10px;
+        font-style: italic;
+        color: #666;
+        min-height: 20px;
+        text-align: center;
+    }
+
+    select.prompt-select {
+        padding: 8px 12px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+        font-family: inherit;
+    }
+
+    /* ── Comparison table ── */
+    .comparison-table {
+        width: 100%;
+        max-width: 600px;
+        border-collapse: collapse;
+        margin: 1.5rem auto;
+        font-size: 0.9em;
+    }
+    .comparison-table th, .comparison-table td {
+        border: 1px solid #ddd;
+        padding: 10px 14px;
+        text-align: center;
+    }
+    .comparison-table th {
+        background: #EBC043;
+        color: white;
+        font-weight: 700;
+    }
+    .comparison-table tr:nth-child(even) { background: #fafafa; }
+    .comparison-table td:first-child { font-weight: 600; text-align: left; }
+</style>
+
+<!-- Header -->
+<div id="includedContent"></div>
+<script> 
+    $(function(){
+      $("#includedContent").load("header.html"); 
+    });
+</script> 
+
+<dt-article>
+
+  <h1>Latent Diffusion Models</h1>
+  <h2>High-Resolution Synthesis on Consumer Hardware</h2>
+  <hr>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 1 – Motivation                                -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Bottleneck of Pixel Space</h2>
+  <p>
+    In the previous chapter, we saw that pixel-space Diffusion Models (DDPMs) produce stunning images with stable training and full distribution coverage. But they have a crippling weakness: <strong>speed</strong>. Generating a $512 \times 512$ RGB image requires running a U-Net over $512 \times 512 \times 3 = 786{,}432$ values at <em>each</em> of $T = 1000$ timesteps.
+  </p>
+  <p>
+    Training these models requires hundreds of GPU-days; generating a single image takes minutes. This is impractical for consumer applications and interactive workflows.
+  </p>
+  <p>
+    <strong>Latent Diffusion Models (LDMs)</strong>, introduced by Rombach et al. (2022) and popularized as <strong>Stable Diffusion</strong>, solve this with an elegant observation: <em>most of the pixel-level detail is perceptually redundant</em>. We don't need to denoise every pixel — we can compress the image first, then diffuse in the compressed space.
+  </p>
+
+  <div class="intuition-box">
+    Think of it this way: if you're writing a novel, you don't compose at the level of individual ink strokes. You work with words and sentences (high-level concepts), and the printer handles the ink. LDMs do the same — the diffusion model works with compressed "concepts" (latent codes), and a decoder handles the pixel-level rendering.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 2 – The Two-Stage Architecture                 -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Two-Stage Architecture</h2>
+  <p>
+    LDMs split image generation into two cleanly separated stages:
+  </p>
+
+  <h3>Stage 1: Perceptual Compression (the Autoencoder)</h3>
+  <p>
+    A pre-trained autoencoder (specifically a VQ-VAE or KL-regularized VAE, as we studied in the first chapter) compresses images into a low-dimensional <strong>latent space</strong>:
+  </p>
+  <ul>
+    <li><strong>Encoder $\mathcal{E}$:</strong> maps an image $x \in \mathbb{R}^{H \times W \times 3}$ to a latent code $z = \mathcal{E}(x) \in \mathbb{R}^{h \times w \times c}$, where typically $h = H/f$, $w = W/f$, with downsampling factor $f \in \{4, 8\}$.</li>
+    <li><strong>Decoder $\mathcal{D}$:</strong> reconstructs the image from the latent: $\tilde{x} = \mathcal{D}(z) \approx x$.</li>
+  </ul>
+  <p>
+    For Stable Diffusion, $f = 8$ and $c = 4$, so a $512 \times 512 \times 3$ image becomes a $64 \times 64 \times 4$ latent — a <strong>48× compression</strong> in spatial dimensions.
+  </p>
+
+  <div class="derivation-step">
+    <div class="step-label">The compression ratio</div>
+    <p>
+      Pixel space: $512 \times 512 \times 3 = 786{,}432$ values<br>
+      Latent space: $64 \times 64 \times 4 = 16{,}384$ values<br>
+      <strong>Ratio:</strong> $786{,}432 / 16{,}384 = 48\times$ fewer values for the diffusion model to process at each step.
+    </p>
+  </div>
+
+  <p>
+    The autoencoder is trained once and then <strong>frozen</strong>. It is never modified during diffusion training. This clean separation is a key design principle — the compression and generation problems are solved independently.
+  </p>
+
+  <h3>Stage 2: Latent Diffusion (the U-Net)</h3>
+  <p>
+    With the autoencoder frozen, the diffusion model operates entirely in the latent space. It learns the same forward/reverse process as DDPM, but over the compact latent codes $z$ instead of raw pixels:
+  </p>
+  <p>
+    $$z_t = \sqrt{\bar{\alpha}_t}\, z_0 + \sqrt{1 - \bar{\alpha}_t}\, \epsilon, \qquad \epsilon \sim \mathcal{N}(0, \mathbf{I})$$
+  </p>
+  <p>
+    The denoising U-Net $\epsilon_\theta(z_t, t)$ predicts the noise $\epsilon$ added to the latent code, identically to pixel-space DDPM but in a vastly smaller space.
+  </p>
+
+  <div class="intuition-box">
+    The autoencoder is like a highly efficient translator. It converts the "language" of pixels (verbose, redundant) into the "language" of latent codes (compact, semantic). The diffusion model then "thinks" in this efficient language, and when it's done, the decoder translates back to pixels.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  Interactive 1: Pixel vs Latent Space Comparison        -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Interactive: Pixel Space vs. Latent Space</h2>
+  <p>
+    This visualization shows the dimensionality difference. On the left, diffusion operates on the full pixel grid. On the right, the same content is represented in the compressed latent space. The slider controls the noise level — notice how <em>far less computation</em> is needed in latent space.
+  </p>
+
+  <div class="interactive-container" id="compContainer">
+    <h4>Interactive · Pixel Space vs. Latent Space Diffusion</h4>
+    <div class="slider-row">
+      <label>Noise level $t$:</label>
+      <input type="range" min="0" max="100" value="0" id="compSlider">
+      <span class="val" id="compVal">0</span>
+    </div>
+    <div class="side-panels">
+      <div class="panel">
+        <div class="panel-label">Pixel Space ($512 \times 512 \times 3$)</div>
+        <canvas id="pixelCanvas" width="200" height="200" style="border:1px solid #ccc; border-radius:4px;"></canvas>
+        <div class="stage-sublabel" id="pixelInfo">786,432 values</div>
+      </div>
+      <div class="panel" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;">Encoder $\mathcal{E}$</div>
+        <div class="arrow" style="padding-top:0;">→</div>
+        <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;">48× smaller</div>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Latent Space ($64 \times 64 \times 4$)</div>
+        <canvas id="latentCompCanvas" width="64" height="64" class="latent-cv" style="width:200px;height:200px;border:1px solid #ccc;border-radius:4px;"></canvas>
+        <div class="stage-sublabel" id="latentInfo">16,384 values</div>
+      </div>
+    </div>
+    <div class="control-panel">
+      <p>Both canvases show the same noise level. But the latent space version processes <strong>48× fewer values</strong> at every denoising step.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 3 – Autoencoder Training                      -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Training the Autoencoder</h2>
+  <p>
+    The autoencoder must produce latents that are (1) compressive enough for efficiency, (2) information-rich enough for high-fidelity reconstruction, and (3) smooth enough for the diffusion process to work. This is achieved by combining multiple loss terms:
+  </p>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 1 — The autoencoder loss</div>
+    <p>
+      $$\mathcal{L}_{\text{AE}} = \underbrace{\| x - \mathcal{D}(\mathcal{E}(x)) \|^2}_{\text{reconstruction}} + \underbrace{\lambda_{\text{KL}} \cdot D_{\text{KL}}(q(z|x) \| \mathcal{N}(0,\mathbf{I}))}_{\text{latent regularization}} + \underbrace{\lambda_{\text{adv}} \cdot \mathcal{L}_{\text{GAN}}(\mathcal{D}(\mathcal{E}(x)))}_{\text{adversarial (perceptual quality)}}$$
+    </p>
+    <p>
+      The reconstruction loss ensures fidelity. The KL term (from VAEs) regularizes the latent space to be smooth. The adversarial loss (from GANs) ensures the reconstructions are perceptually sharp rather than blurry — a beautiful combination of all three paradigms we've studied.
+    </p>
+  </div>
+
+  <div class="intuition-box">
+    The autoencoder loss function is a "greatest hits" of generative modeling: pixel-wise reconstruction from autoencoders, KL regularization from VAEs, and adversarial sharpening from GANs. Each component addresses a specific weakness of the others.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 4 – The LDM Objective                         -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Latent Diffusion Objective</h2>
+  <p>
+    Once the autoencoder is trained and frozen, the diffusion model trains on latent codes. The objective is identical in form to DDPM, but operates on $z$ instead of $x$:
+  </p>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 2 — Unconditional LDM loss</div>
+    <p>
+      $$\mathcal{L}_{\text{LDM}} = \mathbb{E}_{\mathcal{E}(x),\; \epsilon \sim \mathcal{N}(0,\mathbf{I}),\; t \sim \mathcal{U}(1,T)}\!\left[\left\| \epsilon - \epsilon_\theta(z_t, t) \right\|^2\right]$$
+    </p>
+    <p>
+      where $z_0 = \mathcal{E}(x)$ and $z_t = \sqrt{\bar\alpha_t}\, z_0 + \sqrt{1-\bar\alpha_t}\, \epsilon$.
+    </p>
+  </div>
+
+  <p>
+    The training procedure is: (1) encode a training image to $z_0$, (2) sample random $t$ and $\epsilon$, (3) compute $z_t$, (4) predict $\epsilon_\theta(z_t, t)$, (5) backprop MSE. Exactly the same as DDPM — just operating on a 48× smaller tensor.
+  </p>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 5 – Conditioning with Cross-Attention          -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Conditioning: Guiding Generation with Text</h2>
+  <p>
+    Unconditional generation produces random images from the learned distribution. But the real power of Latent Diffusion — and the reason Stable Diffusion went viral — is <strong>conditional generation</strong>: producing images from text prompts.
+  </p>
+
+  <h3>The conditioning mechanism: Cross-Attention</h3>
+  <p>
+    A text prompt $y$ (e.g., <em>"a photograph of a cat on the moon"</em>) is first processed by a frozen text encoder $\tau_\theta$ (typically a CLIP or T5 model) to produce a sequence of token embeddings:
+  </p>
+  <p>
+    $$\tau_\theta(y) \in \mathbb{R}^{L \times d_\tau}$$
+  </p>
+  <p>
+    where $L$ is the sequence length and $d_\tau$ is the embedding dimension. These embeddings are then injected into the U-Net via <strong>cross-attention layers</strong> at multiple resolutions:
+  </p>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 3 — Cross-attention mechanism</div>
+    <p>
+      At each attention layer, the spatial features of the U-Net serve as queries, and the text embeddings serve as keys and values:
+    </p>
+    <p>
+      $$Q = W_Q \cdot \varphi(z_t), \qquad K = W_K \cdot \tau_\theta(y), \qquad V = W_V \cdot \tau_\theta(y)$$
+    </p>
+    <p>
+      $$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^T}{\sqrt{d}}\right) \cdot V$$
+    </p>
+    <p>
+      Here $\varphi(z_t)$ is the flattened intermediate representation of the U-Net. The cross-attention allows <strong>every spatial location</strong> in the latent to attend to <strong>every token</strong> in the prompt, enabling fine-grained text-to-image alignment.
+    </p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 4 — Conditional LDM loss</div>
+    <p>
+      With conditioning, the loss becomes:
+    </p>
+    <p>
+      $$\boxed{\mathcal{L}_{\text{LDM}} = \mathbb{E}_{\mathcal{E}(x),\; y,\; \epsilon \sim \mathcal{N}(0,\mathbf{I}),\; t}\!\left[\left\| \epsilon - \epsilon_\theta(z_t, t, \tau_\theta(y)) \right\|^2\right]}$$
+    </p>
+    <p>
+      The only difference from the unconditional case is the additional input $\tau_\theta(y)$ to the noise predictor.
+    </p>
+  </div>
+
+  <div class="intuition-box">
+    Cross-attention is the bridge between language and vision. Each word in your prompt acts like a "magnet" that pulls certain regions of the image toward the described concept. "Cat" activates fur-like textures; "moon" activates round, bright shapes. The attention weights determine <em>where</em> in the image each word exerts its influence.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  Interactive 2: Full Pipeline Simulation                -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Interactive: The Full LDM Pipeline</h2>
+  <p>
+    This simulation shows the complete Latent Diffusion pipeline. Select a text prompt, then watch: (1) the diffusion model denoises a tiny latent grid (left canvas), then (2) the VAE decoder upscales it to a smooth output image (right canvas).
+  </p>
+
+  <div class="interactive-container" id="pipelineContainer">
+    <h4>Interactive · Text-Conditioned Latent Diffusion Pipeline</h4>
+    <div class="pipeline-stages">
+      <div class="stage">
+        <div class="stage-label">Noise $z_T$</div>
+        <canvas id="noiseStage" width="16" height="16" class="latent-cv" style="width:80px;height:80px;border:1px solid #ddd;border-radius:4px;"></canvas>
+        <div class="stage-sublabel">$16 \times 16$</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="stage">
+        <div class="stage-label">Latent Diffusion</div>
+        <canvas id="latentStage" width="16" height="16" class="latent-cv" style="width:120px;height:120px;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(99,102,241,0.2);"></canvas>
+        <div class="stage-sublabel" id="latentStepLabel">256 values</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="stage">
+        <div class="stage-label">Decoder $\mathcal{D}(z_0)$</div>
+        <canvas id="outputStage" width="128" height="128" style="width:200px;height:200px;border:1px solid #ddd;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.1);"></canvas>
+        <div class="stage-sublabel">$128 \times 128$ output</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <select class="prompt-select" id="promptSelect">
+        <option value="sun">"A golden sun in a blue sky"</option>
+        <option value="forest">"A green forest at night"</option>
+        <option value="cyber">"Neon cyberpunk city lights"</option>
+        <option value="ocean">"A calm ocean under a pink sunset"</option>
+      </select>
+      <button class="train-btn btn-primary" id="pipelineBtn" onclick="Pipeline.generate()">Generate</button>
+      <button class="train-btn btn-reset" onclick="Pipeline.reset()">Reset</button>
+    </div>
+    <div class="status-text" id="pipelineStatus">Select a prompt and press Generate.</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 6 – Classifier-Free Guidance                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Classifier-Free Guidance</h2>
+  <p>
+    In practice, simply conditioning on text produces images that loosely match the prompt but lack visual punch. <strong>Classifier-Free Guidance (CFG)</strong> (Ho & Salimans, 2021) is the technique that makes text-to-image models produce vivid, prompt-faithful images.
+  </p>
+
+  <h3>The idea: amplify the conditional signal</h3>
+  <p>
+    During training, the model randomly drops the conditioning (replacing $y$ with $\varnothing$) some percentage of the time (typically 10–20%). This teaches the model both the conditional $\epsilon_\theta(z_t, t, c)$ and unconditional $\epsilon_\theta(z_t, t, \varnothing)$ distributions.
+  </p>
+  <p>
+    At inference, the final noise prediction is a weighted extrapolation:
+  </p>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 5 — Classifier-Free Guidance formula</div>
+    <p>
+      $$\boxed{\tilde{\epsilon}_\theta(z_t, t, c) = \epsilon_\theta(z_t, t, \varnothing) + w \cdot \Big(\epsilon_\theta(z_t, t, c) - \epsilon_\theta(z_t, t, \varnothing)\Big)}$$
+    </p>
+    <p>
+      where $w$ is the <strong>guidance scale</strong>:
+    </p>
+    <ul>
+      <li>$w = 1$: pure conditional generation (no guidance boost)</li>
+      <li>$w = 7\text{–}12$: typical Stable Diffusion range (vivid, prompt-faithful)</li>
+      <li>$w > 15$: over-saturated, artifacts begin appearing</li>
+    </ul>
+  </div>
+
+  <div class="intuition-box">
+    Classifier-Free Guidance asks: "What's different about the noise prediction <em>when I include the text</em> vs. <em>when I don't</em>?" Then it amplifies that difference. It's like asking "What makes a cat photo specifically cat-like?" and then dialing up the cat-ness. Higher $w$ means more cat-ness — but push too far and you get an uncanny super-cat.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  Interactive 3: CFG Scale                               -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Interactive: Guidance Scale Effect</h2>
+  <p>
+    The slider below simulates how increasing the guidance scale $w$ affects image generation. Low $w$ produces diverse but vague results; high $w$ produces vivid but potentially oversaturated images.
+  </p>
+
+  <div class="interactive-container" id="cfgContainer">
+    <h4>Interactive · Classifier-Free Guidance Scale $w$</h4>
+    <div class="slider-row">
+      <label>Guidance scale $w$:</label>
+      <input type="range" min="1" max="20" step="0.5" value="7.5" id="cfgSlider">
+      <span class="val" id="cfgVal">7.5</span>
+    </div>
+    <div class="canvas-wrapper">
+      <canvas id="cfgCanvas" width="520" height="200"></canvas>
+    </div>
+    <div class="control-panel">
+      <p>$w = 1$: diverse but vague &nbsp;|&nbsp; $w \approx 7.5$: sweet spot &nbsp;|&nbsp; $w > 15$: oversaturated artifacts</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  Interactive 4: Cross-Attention Heatmap                 -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Interactive: Cross-Attention Visualization</h2>
+  <p>
+    Each word in the text prompt influences different spatial regions of the image via cross-attention. Select a word below to see a simulated attention heatmap — showing <em>where</em> that word exerts the most influence.
+  </p>
+
+  <div class="interactive-container" id="attnContainer">
+    <h4>Interactive · Cross-Attention Heatmap</h4>
+    <div class="btn-row" id="attnWords">
+      <!-- Filled by JS -->
+    </div>
+    <div class="side-panels" style="margin-top:12px;">
+      <div class="panel">
+        <div class="panel-label">Generated Image</div>
+        <canvas id="attnImage" width="160" height="160" style="border:1px solid #ccc;border-radius:4px;"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Attention Heatmap</div>
+        <canvas id="attnHeatmap" width="160" height="160" style="border:1px solid #ccc;border-radius:4px;"></canvas>
+      </div>
+    </div>
+    <div class="status-text" id="attnStatus">Click a word to see its attention heatmap.</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 7 – Full Generation Algorithm                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>The Complete Generation Algorithm</h2>
+  <p>
+    Putting it all together, here is the full sampling procedure for a text-conditioned Latent Diffusion Model:
+  </p>
+  <ol>
+    <li><strong>Encode the prompt:</strong> $c = \tau_\theta(y)$</li>
+    <li><strong>Sample pure noise:</strong> $z_T \sim \mathcal{N}(0, \mathbf{I})$ in the latent space ($64 \times 64 \times 4$)</li>
+    <li><strong>Iterative denoising:</strong> For $t = T, T-1, \dots, 1$:
+      <ul>
+        <li>Predict conditional noise: $\epsilon_c = \epsilon_\theta(z_t, t, c)$</li>
+        <li>Predict unconditional noise: $\epsilon_u = \epsilon_\theta(z_t, t, \varnothing)$</li>
+        <li>Apply CFG: $\tilde\epsilon = \epsilon_u + w(\epsilon_c - \epsilon_u)$</li>
+        <li>Compute $z_{t-1}$ using the DDPM (or DDIM) update rule with $\tilde\epsilon$</li>
+      </ul>
+    </li>
+    <li><strong>Decode:</strong> $\tilde{x} = \mathcal{D}(z_0)$ — the final image</li>
+  </ol>
+
+  <div class="intuition-box">
+    Note that CFG requires <strong>two</strong> U-Net forward passes per step (conditional + unconditional). This is the main computational overhead of guidance — but it's vastly cheaper than doing pixel-space diffusion. The 48× compression more than compensates for the 2× guidance cost.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 8 – Comparison Table                          -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Pixel Diffusion vs. Latent Diffusion</h2>
+
+  <table class="comparison-table">
+    <tr>
+      <th>Aspect</th>
+      <th>Pixel Diffusion (DDPM)</th>
+      <th>Latent Diffusion (LDM)</th>
+    </tr>
+    <tr>
+      <td>Diffusion space</td>
+      <td>$H \times W \times 3$</td>
+      <td>$\frac{H}{f} \times \frac{W}{f} \times c$</td>
+    </tr>
+    <tr>
+      <td>Typical dimensionality</td>
+      <td>786,432</td>
+      <td>16,384</td>
+    </tr>
+    <tr>
+      <td>Training cost</td>
+      <td>100s of GPU-days</td>
+      <td>~10s of GPU-days</td>
+    </tr>
+    <tr>
+      <td>Generation speed</td>
+      <td>Minutes per image</td>
+      <td>Seconds per image</td>
+    </tr>
+    <tr>
+      <td>Text conditioning</td>
+      <td>Possible but expensive</td>
+      <td>Native via cross-attention</td>
+    </tr>
+    <tr>
+      <td>Consumer GPU</td>
+      <td>Impractical</td>
+      <td>✓ (8GB+ VRAM)</td>
+    </tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 9 – Extensions                                -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Beyond Text: Other Conditioning Modalities</h2>
+  <p>
+    Because conditioning is injected via cross-attention (or concatenation to the latent), LDMs can be conditioned on <em>any</em> modality:
+  </p>
+  <ul>
+    <li><strong>Image-to-image:</strong> Encode a reference image and condition on its latent (SDEdit, img2img).</li>
+    <li><strong>Inpainting:</strong> Mask a region and condition the diffusion on the unmasked context.</li>
+    <li><strong>Depth / Edge maps:</strong> Concatenate structural maps to the latent input (ControlNet).</li>
+    <li><strong>Class labels:</strong> Embed a class index and inject via AdaGN (class-conditional generation).</li>
+  </ul>
+  <p>
+    This flexibility is why Latent Diffusion has become the foundation for an entire ecosystem of creative AI tools.
+  </p>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!--  SECTION 10 – Summary                                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <h2>Summary &amp; Looking Ahead</h2>
+  <p>
+    Latent Diffusion Models represent the <strong>democratization of generative AI</strong>:
+  </p>
+  <ul>
+    <li>They achieve pixel-DDPM quality while being <strong>~50× more efficient</strong> in compute.</li>
+    <li>The two-stage design cleanly separates perceptual compression (VAE) from semantic generation (diffusion).</li>
+    <li>Cross-attention enables powerful, flexible <strong>text-to-image conditioning</strong>.</li>
+    <li>Classifier-Free Guidance provides a single knob ($w$) to control the fidelity-diversity tradeoff.</li>
+    <li>The approach runs on <strong>consumer GPUs</strong>, enabling the explosion of AI-generated art we see today.</li>
+  </ul>
+  <p>
+    While LDMs are the dominant paradigm for image generation, a fundamentally different approach has been gaining ground: <strong>Autoregressive Models</strong>. Instead of denoising a latent in parallel, autoregressive models generate images <em>token by token</em>, unifying image generation with the same architectures that power large language models. This is our final chapter.
+  </p>
+
+</dt-article>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!--  ALL INTERACTIVE SCRIPTS                                   -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script>
+// ─── Shared utilities ───
+function createBaseImage(size) {
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const cx = c.getContext('2d');
+    const grad = cx.createLinearGradient(0, 0, 0, size);
+    grad.addColorStop(0, '#3b82f6');
+    grad.addColorStop(0.5, '#f472b6');
+    grad.addColorStop(1, '#1e1b4b');
+    cx.fillStyle = grad; cx.fillRect(0, 0, size, size);
+    cx.beginPath(); cx.arc(size/2, size/2+size*0.07, size*0.2, 0, Math.PI*2);
+    cx.fillStyle = '#fbbf24'; cx.fill();
+    cx.beginPath(); cx.moveTo(0, size);
+    cx.lineTo(size*0.33, size*0.5); cx.lineTo(size*0.66, size*0.65);
+    cx.lineTo(size, size*0.4); cx.lineTo(size, size);
+    cx.fillStyle = '#111827'; cx.fill();
+    return cx.getImageData(0, 0, size, size);
+}
+
+function createNoiseBuffer(len) {
+    const b = new Float32Array(len);
+    for (let i = 0; i < len; i++) b[i] = (Math.random() - 0.5) * 2.5 * 255;
+    return b;
+}
+
+function cosineAlphaBar(t, T) {
+    const s = 0.008;
+    const f = (x) => Math.cos(((x / T) + s) / (1 + s) * Math.PI / 2) ** 2;
+    return f(t) / f(0);
+}
+
+// ═══════════════════════════════════════════
+// 1. Pixel vs Latent Space Comparison
+// ═══════════════════════════════════════════
+(function() {
+    const slider = document.getElementById('compSlider');
+    const valSpan = document.getElementById('compVal');
+    const pixelCanvas = document.getElementById('pixelCanvas');
+    const latentCanvas = document.getElementById('latentCompCanvas');
+    if (!pixelCanvas || !latentCanvas) return;
+
+    const pCtx = pixelCanvas.getContext('2d');
+    const lCtx = latentCanvas.getContext('2d');
+
+    const pSize = 200, lSize = 64;
+    const pClean = createBaseImage(pSize);
+    const pNoise = createNoiseBuffer(pSize * pSize * 4);
+
+    // Create small version for latent
+    const lClean = createBaseImage(lSize);
+    const lNoise = createNoiseBuffer(lSize * lSize * 4);
+
+    function draw() {
+        const t = parseInt(slider.value);
+        valSpan.textContent = t;
+        const tScaled = Math.round(t / 100 * 1000);
+        const ab = cosineAlphaBar(tScaled, 1000);
+        const sig = Math.sqrt(ab);
+        const noi = Math.sqrt(1 - ab);
+
+        // Pixel space
+        const pImg = pCtx.createImageData(pSize, pSize);
+        for (let i = 0; i < pImg.data.length; i += 4) {
+            pImg.data[i]   = Math.min(255, Math.max(0, pClean.data[i]   * sig + pNoise[i]   * noi));
+            pImg.data[i+1] = Math.min(255, Math.max(0, pClean.data[i+1] * sig + pNoise[i+1] * noi));
+            pImg.data[i+2] = Math.min(255, Math.max(0, pClean.data[i+2] * sig + pNoise[i+2] * noi));
+            pImg.data[i+3] = 255;
+        }
+        pCtx.putImageData(pImg, 0, 0);
+
+        // Latent space
+        const lImg = lCtx.createImageData(lSize, lSize);
+        for (let i = 0; i < lImg.data.length; i += 4) {
+            lImg.data[i]   = Math.min(255, Math.max(0, lClean.data[i]   * sig + lNoise[i]   * noi));
+            lImg.data[i+1] = Math.min(255, Math.max(0, lClean.data[i+1] * sig + lNoise[i+1] * noi));
+            lImg.data[i+2] = Math.min(255, Math.max(0, lClean.data[i+2] * sig + lNoise[i+2] * noi));
+            lImg.data[i+3] = 255;
+        }
+        lCtx.putImageData(lImg, 0, 0);
+
+        document.getElementById('pixelInfo').textContent = `786,432 values · √ᾱ = ${sig.toFixed(3)}`;
+        document.getElementById('latentInfo').textContent = `16,384 values · √ᾱ = ${sig.toFixed(3)}`;
+    }
+
+    slider.addEventListener('input', draw);
+    draw();
+})();
+
+// ═══════════════════════════════════════════
+// 2. Full Pipeline Simulation
+// ═══════════════════════════════════════════
+const Pipeline = (function() {
+    const noiseCanvas = document.getElementById('noiseStage');
+    const latentCanvas = document.getElementById('latentStage');
+    const outputCanvas = document.getElementById('outputStage');
+    const statusEl = document.getElementById('pipelineStatus');
+    const stepLabel = document.getElementById('latentStepLabel');
+    const genBtn = document.getElementById('pipelineBtn');
+    const promptSelect = document.getElementById('promptSelect');
+    if (!noiseCanvas) return { generate: ()=>{}, reset: ()=>{} };
+
+    const nCtx = noiseCanvas.getContext('2d');
+    const lCtx = latentCanvas.getContext('2d');
+    const oCtx = outputCanvas.getContext('2d');
+    const res = 16;
+    const outRes = 128;
+
+    let latentGrid = new Float32Array(res * res * 3);
+    let targetGrid = new Float32Array(res * res * 3);
+
+    function fillNoise() {
+        for (let i = 0; i < latentGrid.length; i++) latentGrid[i] = Math.random();
+    }
+
+    function drawGrid(ctx, grid, r) {
+        const img = ctx.createImageData(r, r);
+        for (let i = 0; i < r * r; i++) {
+            img.data[i*4]   = grid[i*3]   * 255;
+            img.data[i*4+1] = grid[i*3+1] * 255;
+            img.data[i*4+2] = grid[i*3+2] * 255;
+            img.data[i*4+3] = 255;
+        }
+        ctx.putImageData(img, 0, 0);
+    }
+
+    function setTarget(type) {
+        for (let y = 0; y < res; y++) {
+            for (let x = 0; x < res; x++) {
+                const i = (y * res + x) * 3;
+                const dx = x - res/2, dy = y - res/2;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (type === 'sun') {
+                    if (dist < 4) { targetGrid[i]=1; targetGrid[i+1]=0.8; targetGrid[i+2]=0; }
+                    else { targetGrid[i]=0.2; targetGrid[i+1]=0.5; targetGrid[i+2]=0.9; }
+                } else if (type === 'forest') {
+                    if (y > res*0.4) { targetGrid[i]=0; targetGrid[i+1]=0.5+Math.random()*0.3; targetGrid[i+2]=0.1; }
+                    else { targetGrid[i]=0.05; targetGrid[i+1]=0.05; targetGrid[i+2]=0.2; }
+                } else if (type === 'cyber') {
+                    if (Math.random()>0.65) { targetGrid[i]=Math.random()*0.5+0.5; targetGrid[i+1]=0; targetGrid[i+2]=1; }
+                    else { targetGrid[i]=0.08; targetGrid[i+1]=0; targetGrid[i+2]=0.15; }
+                } else if (type === 'ocean') {
+                    const ny = y / res;
+                    if (ny < 0.35) { targetGrid[i]=0.9; targetGrid[i+1]=0.5; targetGrid[i+2]=0.6; }
+                    else if (ny < 0.5) { targetGrid[i]=0.95; targetGrid[i+1]=0.6; targetGrid[i+2]=0.3; }
+                    else { const w = Math.sin(x*0.8)*0.05; targetGrid[i]=0.05; targetGrid[i+1]=0.3+w; targetGrid[i+2]=0.7+w; }
+                }
+            }
+        }
+    }
+
+    function generate() {
+        genBtn.disabled = true;
+        promptSelect.disabled = true;
+        fillNoise();
+        setTarget(promptSelect.value);
+
+        // Draw initial noise
+        drawGrid(nCtx, latentGrid, res);
+        drawGrid(lCtx, latentGrid, res);
+        oCtx.fillStyle = '#eee'; oCtx.fillRect(0, 0, outRes, outRes);
+
+        let step = 0;
+        const totalSteps = 60;
+
+        function tick() {
+            if (step < totalSteps) {
+                step++;
+                statusEl.textContent = `Step ${step}/${totalSteps}: Denoising latents...`;
+                stepLabel.textContent = `Step ${step}/${totalSteps}`;
+                const decay = 1 - step / totalSteps;
+                for (let i = 0; i < latentGrid.length; i++) {
+                    const jitter = (Math.random() - 0.5) * 0.1 * decay;
+                    latentGrid[i] += (targetGrid[i] - latentGrid[i]) * 0.06 + jitter;
+                }
+                drawGrid(lCtx, latentGrid, res);
+                requestAnimationFrame(tick);
+            } else {
+                statusEl.textContent = 'Denoising complete. Running VAE Decoder 𝒟(z₀)...';
+                stepLabel.textContent = '256 values (done)';
+                setTimeout(() => {
+                    oCtx.imageSmoothingEnabled = true;
+                    oCtx.imageSmoothingQuality = 'high';
+                    oCtx.drawImage(latentCanvas, 0, 0, outRes, outRes);
+                    statusEl.textContent = 'Generation complete ✓';
+                    genBtn.disabled = false;
+                    promptSelect.disabled = false;
+                }, 400);
+            }
+        }
+        tick();
+    }
+
+    function reset() {
+        fillNoise();
+        drawGrid(nCtx, latentGrid, res);
+        drawGrid(lCtx, latentGrid, res);
+        oCtx.clearRect(0, 0, outRes, outRes);
+        oCtx.fillStyle = '#eee'; oCtx.fillRect(0, 0, outRes, outRes);
+        statusEl.textContent = 'Select a prompt and press Generate.';
+        stepLabel.textContent = '256 values';
+        genBtn.disabled = false;
+        promptSelect.disabled = false;
+    }
+
+    // Init
+    fillNoise();
+    drawGrid(nCtx, latentGrid, res);
+    drawGrid(lCtx, latentGrid, res);
+
+    return { generate, reset };
+})();
+
+// ═══════════════════════════════════════════
+// 3. CFG Scale Effect
+// ═══════════════════════════════════════════
+(function() {
+    const slider = document.getElementById('cfgSlider');
+    const valSpan = document.getElementById('cfgVal');
+    const canvas = document.getElementById('cfgCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = 520, H = 200;
+
+    // We simulate: at low w, image is blurry/diverse. At high w, saturated.
+    // We'll show a row of "generated images" (colored rectangles) with varying saturation.
+    const baseImage = createBaseImage(H - 20);
+
+    function draw() {
+        const w = parseFloat(slider.value);
+        valSpan.textContent = w.toFixed(1);
+        ctx.clearRect(0, 0, W, H);
+
+        // Create a modified image based on w
+        const sz = H - 20;
+        const img = ctx.createImageData(sz, sz);
+        const clean = baseImage;
+
+        for (let i = 0; i < img.data.length; i += 4) {
+            let r = clean.data[i], g = clean.data[i+1], b = clean.data[i+2];
+
+            if (w < 3) {
+                // Low guidance: blend toward gray (blurry/vague)
+                const blend = (3 - w) / 3 * 0.6;
+                const gray = (r + g + b) / 3;
+                r = r * (1 - blend) + gray * blend + (Math.random()-0.5) * 30 * (1 - w/3);
+                g = g * (1 - blend) + gray * blend + (Math.random()-0.5) * 30 * (1 - w/3);
+                b = b * (1 - blend) + gray * blend + (Math.random()-0.5) * 30 * (1 - w/3);
+            } else if (w > 12) {
+                // High guidance: oversaturate
+                const boost = (w - 12) / 8;
+                const avg = (r + g + b) / 3;
+                r = r + (r - avg) * boost * 3;
+                g = g + (g - avg) * boost * 3;
+                b = b + (b - avg) * boost * 3;
+                // Add artifacts
+                if (Math.random() < boost * 0.15) {
+                    r = Math.random() * 255; g = Math.random() * 255; b = Math.random() * 255;
+                }
+            } else {
+                // Sweet spot: slight sharpening
+                const factor = 1 + (w - 7.5) * 0.02;
+                const avg = (r + g + b) / 3;
+                r = avg + (r - avg) * factor;
+                g = avg + (g - avg) * factor;
+                b = avg + (b - avg) * factor;
+            }
+
+            img.data[i]   = Math.min(255, Math.max(0, r));
+            img.data[i+1] = Math.min(255, Math.max(0, g));
+            img.data[i+2] = Math.min(255, Math.max(0, b));
+            img.data[i+3] = 255;
+        }
+
+        // Center the image
+        const offX = (W - sz) / 2;
+        ctx.putImageData(img, offX, 10);
+
+        // Label
+        ctx.fillStyle = '#666'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+        let label = w < 3 ? 'Vague / Diverse' : w > 12 ? 'Oversaturated / Artifacts' : 'Sharp / Faithful';
+        ctx.fillText(`w = ${w.toFixed(1)} — ${label}`, W / 2, H - 2);
+
+        // Indicator bar
+        const barY = 3;
+        const barW = W - 40;
+        const barX = 20;
+        ctx.fillStyle = '#eee';
+        ctx.fillRect(barX, barY, barW, 5);
+        // Gradient indicator
+        const pos = ((w - 1) / 19) * barW + barX;
+        ctx.fillStyle = w > 12 ? '#ef4444' : w < 3 ? '#94a3b8' : '#22c55e';
+        ctx.beginPath(); ctx.arc(pos, barY + 2.5, 5, 0, Math.PI * 2); ctx.fill();
+    }
+
+    slider.addEventListener('input', draw);
+    draw();
+})();
+
+// ═══════════════════════════════════════════
+// 4. Cross-Attention Heatmap
+// ═══════════════════════════════════════════
+(function() {
+    const imgCanvas = document.getElementById('attnImage');
+    const heatCanvas = document.getElementById('attnHeatmap');
+    const wordsDiv = document.getElementById('attnWords');
+    const statusEl = document.getElementById('attnStatus');
+    if (!imgCanvas || !heatCanvas) return;
+
+    const iCtx = imgCanvas.getContext('2d');
+    const hCtx = heatCanvas.getContext('2d');
+    const sz = 160;
+
+    // Draw a scene: sky top, sun center-top, ground bottom, cat center-bottom
+    const cleanData = (function() {
+        const c = document.createElement('canvas');
+        c.width = sz; c.height = sz;
+        const cx = c.getContext('2d');
+        // Sky
+        const g = cx.createLinearGradient(0, 0, 0, sz);
+        g.addColorStop(0, '#1e3a5f'); g.addColorStop(0.5, '#2563eb'); g.addColorStop(1, '#064e3b');
+        cx.fillStyle = g; cx.fillRect(0, 0, sz, sz);
+        // Moon
+        cx.beginPath(); cx.arc(sz*0.7, sz*0.22, 18, 0, Math.PI*2);
+        cx.fillStyle = '#e2e8f0'; cx.fill();
+        // Ground
+        cx.fillStyle = '#064e3b'; cx.fillRect(0, sz*0.65, sz, sz*0.35);
+        // Cat silhouette (triangle ears + oval body)
+        cx.fillStyle = '#1a1a2e';
+        cx.beginPath(); cx.ellipse(sz*0.4, sz*0.72, 22, 16, 0, 0, Math.PI*2); cx.fill();
+        cx.beginPath(); cx.ellipse(sz*0.4, sz*0.62, 10, 10, 0, 0, Math.PI*2); cx.fill();
+        // Ears
+        cx.beginPath(); cx.moveTo(sz*0.33, sz*0.55); cx.lineTo(sz*0.37, sz*0.48); cx.lineTo(sz*0.40, sz*0.55); cx.fill();
+        cx.beginPath(); cx.moveTo(sz*0.40, sz*0.55); cx.lineTo(sz*0.43, sz*0.48); cx.lineTo(sz*0.47, sz*0.55); cx.fill();
+        return cx.getImageData(0, 0, sz, sz);
+    })();
+
+    iCtx.putImageData(cleanData, 0, 0);
+
+    const prompt = ["a", "cat", "sitting", "on", "the", "moon"];
+    // Attention regions for each word (cx, cy, radius)
+    const regions = {
+        "a":       { cx: 0.5, cy: 0.5, r: 0.7, strength: 0.15 },
+        "cat":     { cx: 0.4, cy: 0.67, r: 0.22, strength: 0.95 },
+        "sitting": { cx: 0.4, cy: 0.72, r: 0.2, strength: 0.6 },
+        "on":      { cx: 0.5, cy: 0.55, r: 0.4, strength: 0.2 },
+        "the":     { cx: 0.5, cy: 0.5, r: 0.6, strength: 0.1 },
+        "moon":    { cx: 0.7, cy: 0.22, r: 0.18, strength: 0.9 }
+    };
+
+    // Build word buttons
+    prompt.forEach(word => {
+        const btn = document.createElement('button');
+        btn.className = 'train-btn btn-primary';
+        btn.style.padding = '6px 14px'; btn.style.fontSize = '13px';
+        btn.textContent = `"${word}"`;
+        btn.onclick = () => showHeatmap(word);
+        wordsDiv.appendChild(btn);
+    });
+
+    function showHeatmap(word) {
+        const reg = regions[word];
+        const img = hCtx.createImageData(sz, sz);
+
+        for (let y = 0; y < sz; y++) {
+            for (let x = 0; x < sz; x++) {
+                const dx = (x / sz) - reg.cx;
+                const dy = (y / sz) - reg.cy;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                let val = Math.max(0, 1 - dist / reg.r) * reg.strength;
+                val = Math.pow(val, 0.6); // soften falloff
+                // Add some noise for realism
+                val += (Math.random() - 0.5) * 0.05;
+                val = Math.max(0, Math.min(1, val));
+
+                const i = (y * sz + x) * 4;
+                // Heat colormap: blue -> green -> yellow -> red
+                if (val < 0.25) {
+                    img.data[i] = 0; img.data[i+1] = Math.round(val * 4 * 255); img.data[i+2] = 255;
+                } else if (val < 0.5) {
+                    img.data[i] = 0; img.data[i+1] = 255; img.data[i+2] = Math.round((1 - (val-0.25)*4) * 255);
+                } else if (val < 0.75) {
+                    img.data[i] = Math.round((val-0.5)*4 * 255); img.data[i+1] = 255; img.data[i+2] = 0;
+                } else {
+                    img.data[i] = 255; img.data[i+1] = Math.round((1-(val-0.75)*4) * 255); img.data[i+2] = 0;
+                }
+                img.data[i+3] = 200;
+            }
+        }
+        hCtx.putImageData(img, 0, 0);
+        statusEl.textContent = `Attention for "${word}" — ${reg.strength > 0.5 ? 'strong spatial focus' : 'diffuse / weak attention'}`;
+    }
+
+    // Show cat by default
+    showHeatmap('cat');
+})();
+</script>
