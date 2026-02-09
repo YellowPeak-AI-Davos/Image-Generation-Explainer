@@ -12,78 +12,173 @@
 <script>
   MathJax = {
     tex: {
-      inlineMath: [['$', '$'], ['\\(', '\\)']]
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      tags: 'ams'
+    },
+    startup: {
+      pageReady: () => {
+        return MathJax.startup.defaultPageReady();
+      }
     }
   };
 </script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 <style>
-    /* Custom styles for the AR Visualization */
-    .ar-container {
-        border: 1px solid rgba(0, 0, 0, 0.1);
+    /* ── Global custom styles ── */
+    .interactive-container {
+        border: 1px solid rgba(0,0,0,0.1);
         border-radius: 8px;
         background: #f9f9f9;
-        padding: 20px;
+        padding: 24px;
         margin: 2rem 0;
         display: flex;
         flex-direction: column;
         align-items: center;
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     }
-
+    .interactive-container h4 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #888;
+    }
     .canvas-wrapper {
         position: relative;
-        margin-bottom: 20px;
-        display: flex;
-        gap: 20px;
-    }
-
-    canvas {
-        background: #fff;
-        border: 1px solid #ccc;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        image-rendering: pixelated; 
+        background: white;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .control-panel {
+        margin-top: 14px;
+        font-size: 0.9em;
+        color: #555;
+        text-align: center;
+        max-width: 640px;
     }
 
-    .controls {
-        display: flex;
-        gap: 15px;
-        align-items: center;
+    /* ── Derivation steps ── */
+    .derivation-step {
+        background: #f4f8fb;
+        border-left: 4px solid #EBC043;
+        padding: 16px 20px;
+        margin: 1.2rem 0;
+        border-radius: 0 6px 6px 0;
+    }
+    .derivation-step .step-label {
+        font-weight: 700;
+        color: #EBC043;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
     }
 
-    button.step-btn {
+    /* ── Intuition callout boxes ── */
+    .intuition-box {
+        background: #fffbe6;
+        border: 1px solid #EBC043;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin: 1.5rem 0;
+    }
+    .intuition-box::before {
+        content: '💡 Intuition';
+        display: block;
+        font-weight: 700;
+        font-size: 0.85em;
+        color: #b8941e;
+        margin-bottom: 6px;
+    }
+
+    /* ── Buttons ── */
+    button.train-btn {
         padding: 10px 20px;
-        background-color: #f59e0b; /* Amber */
-        color: white;
-        border: none;
-        border-radius: 6px;
         font-size: 14px;
         font-weight: bold;
+        border: none;
+        border-radius: 4px;
         cursor: pointer;
-        transition: transform 0.1s;
+        transition: transform 0.1s, opacity 0.2s;
+    }
+    button.train-btn:active { transform: scale(0.96); }
+    button.train-btn:disabled { background-color: #ccc !important; color: #888 !important; cursor: not-allowed; }
+    .btn-play { background-color: #22c55e; color: white; }
+    .btn-stop { background-color: #f97316; color: white; }
+    .btn-reset { background-color: #e5e7eb; color: #374151; }
+    .btn-primary { background-color: #f59e0b; color: white; }
+    .btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
-    button.step-btn:active { transform: scale(0.96); }
-    button.step-btn:disabled { background-color: #ccc; cursor: not-allowed; }
-
-    button.play-btn {
-        background-color: #10b981; /* Green */
+    /* ── Slider rows ── */
+    .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 8px 0;
+        flex-wrap: wrap;
+        justify-content: center;
     }
-
-    .context-info {
+    .slider-row label {
+        font-weight: 600;
+        min-width: 140px;
+        text-align: right;
+    }
+    .slider-row input[type=range] {
+        width: 240px;
+        accent-color: #EBC043;
+    }
+    .slider-row .val {
+        min-width: 60px;
         font-family: monospace;
-        color: #555;
-        margin-top: 10px;
-        text-align: center;
-        height: 40px;
     }
 
-    .highlight-box {
-        position: absolute;
-        border: 2px solid red;
-        pointer-events: none;
-        transition: all 0.1s;
+    /* ── Side-by-side panels ── */
+    .side-panels {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 10px;
+    }
+    .side-panels .panel { text-align: center; }
+    .side-panels .panel canvas { border: 1px solid #ccc; border-radius: 4px; }
+    .side-panels .panel-label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 0.95em;
+    }
+
+    /* ── Misc ── */
+    .epoch-display {
+        font-family: monospace;
+        font-size: 14px;
+        background: #eee;
+        padding: 4px 12px;
+        border-radius: 4px;
+    }
+    .mask-grid-wrapper {
+        display: flex;
+        gap: 32px;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: flex-start;
+    }
+    .mask-panel { text-align: center; }
+    .mask-panel canvas { border: 1px solid #ccc; border-radius: 4px; }
+    .mask-panel .panel-label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 0.95em;
     }
 </style>
 
@@ -97,198 +192,807 @@
 
 <dt-article>
   <h1>Autoregressive Models</h1>
-  <h2>If an Image is just a Sentence of Pixels...</h2>
-
+  <h2>If an Image Is Just a Sentence of Pixels…</h2>
   <hr>
 
+  <!-- ═══════════ SECTION 1 – Motivation ═══════════ -->
   <h2>The Language of Images</h2>
   <p>
-    Before Diffusion models took over the world, there was another powerful idea: treating image generation exactly like text generation.
+    Before Diffusion models took over the world, there was another powerful idea: treating image generation <em>exactly</em> like text generation.
   </p>
   <p>
-    Models like GPT-4 generate text <strong>autoregressively</strong>—they predict the next word based on all the previous words. Autoregressive Image Models (like PixelCNN, PixelRNN, and ImageGPT) apply this exact logic to visual data. They flatten the 2D grid of an image into a 1D sequence of pixels and learn to predict the color of pixel $x_i$ given the history of pixels $x_1, \dots, x_{i-1}$.
+    Models like GPT generate text <strong>autoregressively</strong> — they predict the next word based on all the previous words. Autoregressive Image Models (like PixelCNN, PixelRNN, and ImageGPT) apply this exact logic to visual data. They flatten the 2D grid of an image into a 1D sequence of pixels and learn to predict the color of pixel $x_i$ given the history of pixels $x_1, \dots, x_{i-1}$.
+  </p>
+  <p>
+    The premise is deceptively simple: if a language model can write a coherent paragraph by predicting one word at a time, then an image model should be able to paint a coherent scene by predicting one pixel at a time.
   </p>
 
-  <h2>The Math: The Chain Rule of Probability</h2>
+  <div class="intuition-box">
+    Think of painting an image with a strict rule: you must fill in each pixel from the top-left corner, moving right and down, row by row. At each position you ask: "given everything I have painted so far, what color should this pixel be?" If you can answer that question well enough, you can generate entire images from scratch.
+  </div>
+
+  <!-- ═══════════ SECTION 2 – The Chain Rule ═══════════ -->
+  <h2>The Mathematics: The Chain Rule of Probability</h2>
   <p>
-    The goal is to model the joint distribution of all pixels $p(x)$. Using the chain rule of probability, we can factorize this difficult joint distribution into a product of simple conditional distributions:
+    The goal of any generative model is to learn the joint distribution $p(x)$ over all pixels of an image. For an image with $N$ pixels, $x = (x_1, x_2, \dots, x_N)$, this is a distribution over an astronomically high-dimensional space.
   </p>
   <p>
-    $$ p(x) = \prod_{i=1}^{N} p(x_i | x_1, \dots, x_{i-1}) $$
+    Autoregressive models tame this complexity with a single mathematical identity: the <strong>chain rule of probability</strong>. Any joint distribution can be decomposed into a product of conditionals:
   </p>
   <p>
-    This means the model asks: "Given that the top-left pixel is blue, and the next one is blue... what should the third one be?"
+    $$p(x) = p(x_1, x_2, \dots, x_N) = \prod_{i=1}^{N} p(x_i \mid x_1, x_2, \dots, x_{i-1})$$
+  </p>
+  <p>
+    This is not an approximation — it is an exact mathematical identity that holds for <em>any</em> distribution. The only modeling choice is the <strong>ordering</strong> of the variables and the <strong>parameterization</strong> of each conditional $p(x_i \mid x_{&lt;i})$.
   </p>
 
-  <h2>Interactive: The Raster Scan</h2>
+  <div class="derivation-step">
+    <div class="step-label">Step 1 — The chain rule is exact</div>
+    <p>
+      By repeated application of the definition of conditional probability $p(A, B) = p(A \mid B) \cdot p(B)$:
+    </p>
+    <p>
+      $$p(x_1, x_2, \dots, x_N) = p(x_1) \cdot p(x_2 \mid x_1) \cdot p(x_3 \mid x_1, x_2) \cdots p(x_N \mid x_1, \dots, x_{N-1})$$
+    </p>
+    <p>Each factor $p(x_i \mid x_{&lt;i})$ is a valid probability distribution over pixel $x_i$, given the "context" of all preceding pixels.</p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 2 — The log-likelihood decomposes cleanly</div>
+    <p>Taking the logarithm (which turns products into sums):</p>
+    <p>$$\log p(x) = \sum_{i=1}^{N} \log p(x_i \mid x_{&lt;i})$$</p>
+    <p>This is critical for training: the total log-likelihood is simply the <em>sum</em> of log-probabilities at each position. We can compute all $N$ terms in parallel during training (see Teacher Forcing below).</p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 3 — Practical dimensions</div>
+    <p>
+      For a tiny 16×16 grayscale image, $N = 256$ pixels. For a 256×256 RGB image, $N = 256 \times 256 \times 3 = 196{,}608$ sub-pixel values. The model must learn $N$ conditional distributions, each potentially depending on all earlier values. This gives a sense of the challenge — and explains why architectural innovations (masked convolutions, self-attention) are essential.
+    </p>
+  </div>
+
+  <div class="intuition-box">
+    The chain rule tells us: <em>any</em> joint distribution can be written as a product of conditionals. The autoregressive approach simply takes this identity literally and trains a neural network to approximate each conditional. Unlike VAEs (which use a lower bound) or GANs (which use an adversarial proxy), autoregressive models optimize the <strong>exact</strong> log-likelihood.
+  </div>
+
+  <!-- ═══════════ SECTION 3 – Raster Scan ═══════════ -->
+  <h2>Pixel Ordering: The Raster Scan</h2>
   <p>
-    Most Autoregressive models generate images in "Raster Scan" order: row by row, from top-left to bottom-right.
+    The chain rule holds for any ordering of the variables. But in practice, we need to choose one. The most natural choice for images is the <strong>raster scan order</strong>: left to right, top to bottom — the same way you read text on a page.
   </p>
   <p>
-    <strong>Simulation:</strong> The grid below represents a 16x16 image (256 tokens). <br>
-    The <span style="color:red; font-weight:bold;">Red Box</span> is the pixel currently being predicted. <br>
-    The <span style="background:#ddd; padding:2px;">Grey/Colored Area</span> is the "Context" (History) the model can see. <br>
-    The <span style="color:#aaa;">White Area</span> is the future (Masked), which is invisible to the model.
+    This ordering has a key property: the "context" for pixel $(r, c)$ is the entire region <em>above</em> it plus all pixels to its <em>left</em> on the same row. This triangular causal structure can be efficiently enforced with <strong>masked convolutions</strong> (in PixelCNN) or <strong>causal attention masks</strong> (in Transformers like ImageGPT).
+  </p>
+  <p>
+    The interactive demo below visualizes this process. The <span style="color:red; font-weight:bold;">red box</span> marks the pixel currently being predicted. The <span style="background:#ddd; padding:2px 4px; border-radius:2px;">colored area</span> is the context the model can see. The <span style="color:#aaa;">white area</span> is the future — invisible to the model.
   </p>
 
-  <div class="ar-container">
+  <!-- Interactive 1: Raster Scan Generation -->
+  <div class="interactive-container" id="rasterContainer">
+    <h4>Interactive · Autoregressive Generation (Raster Scan)</h4>
     <div class="canvas-wrapper">
-        <canvas id="arCanvas" width="256" height="256"></canvas>
+        <canvas id="arCanvas" width="320" height="320"></canvas>
     </div>
-
-    <div class="controls">
-        <button class="step-btn" id="stepBtn" onclick="step()">Predict Next Pixel</button>
-        <button class="step-btn play-btn" id="playBtn" onclick="togglePlay()">Auto-Complete</button>
-        <button class="step-btn" style="background:#ef4444" onclick="reset()">Reset</button>
+    <div class="btn-row">
+        <button class="train-btn btn-primary" id="stepBtn" onclick="AR.step()">Predict Next Pixel</button>
+        <button class="train-btn btn-play" id="playBtn" onclick="AR.togglePlay()">Auto-Complete</button>
+        <button class="train-btn btn-reset" onclick="AR.reset()">Reset</button>
+        <span class="epoch-display" id="arStatus">Step 0 / 256</span>
     </div>
-
-    <div class="context-info" id="status">
-        Step 0/256<br>Context: Empty
+    <div class="control-panel">
+      <p><strong>Try it:</strong> Click "Predict Next Pixel" to step through one pixel at a time, or "Auto-Complete" to watch the full generation. Notice how the image is revealed in strict raster-scan order — row by row, left to right.</p>
     </div>
   </div>
 
-  <h2>Strengths and Weaknesses</h2>
-  
-  <h3>Strengths</h3>
+  <!-- ═══════════ SECTION 4 – Pixel Distributions ═══════════ -->
+  <h2>Modeling Pixel Distributions</h2>
   <p>
-    <strong>Exact Likelihoods:</strong> Unlike GANs, AR models optimize the exact log-likelihood of the data. This means training is very stable and doesn't suffer from mode collapse.
-  </p>
-  <p>
-    <strong>Global Coherence:</strong> Because the model attends to previously generated pixels (via Transformers or LSTM layers), it can maintain consistency. If it started drawing a dog's head at the top, it knows to draw the dog's body at the bottom.
+    Each conditional $p(x_i \mid x_{&lt;i})$ is a probability distribution over the possible values of pixel $x_i$. But what form should this distribution take?
   </p>
 
-  <h3>Weaknesses</h3>
+  <h3>The Categorical Approach (PixelCNN)</h3>
   <p>
-    <strong>Sequential Slowness:</strong> This is the fatal flaw. To generate a 256x256 image, the model must run the forward pass 65,536 times—once for every single pixel. This makes generation incredibly slow compared to GANs (1 pass) or even Diffusion (50-100 passes).
+    For 8-bit images, each color channel takes an integer value in $\{0, 1, \dots, 255\}$. PixelCNN models each pixel channel as a <strong>categorical distribution</strong> over 256 classes. The network outputs a 256-dimensional vector for each pixel position, passed through a <strong>softmax</strong>:
   </p>
   <p>
-    <strong>Order Bias:</strong> The model is great at continuing an image downwards, but often struggles to "look ahead" or fix mistakes made early in the sequence.
+    $$p(x_i = k \mid x_{&lt;i}) = \frac{\exp(f_k(x_{&lt;i}))}{\sum_{j=0}^{255} \exp(f_j(x_{&lt;i}))} \quad \text{for } k \in \{0, 1, \dots, 255\}$$
+  </p>
+  <p>where $f_k(x_{&lt;i})$ are the <strong>logits</strong> — raw scores output by the neural network for class $k$, given the context.</p>
+
+  <div class="intuition-box">
+    The model doesn't output a single "best guess" for each pixel. It outputs a full probability distribution — essentially saying "there's a 30% chance this pixel is dark blue, 25% chance it's medium blue, 10% chance it's black…" and so on across all 256 intensity values. This is what allows sampling: we draw from this distribution to introduce controlled randomness.
+  </div>
+
+  <h3>The Logistic Mixture Approach (PixelCNN++)</h3>
+  <p>
+    Outputting 256 logits per channel is expensive. PixelCNN++ introduced a more parameter-efficient alternative: model the conditional as a <strong>mixture of logistics</strong>:
+  </p>
+  <p>
+    $$p(x_i \mid x_{&lt;i}) = \sum_{m=1}^{M} \pi_m \, \sigma\!\left(\frac{x_i + 0.5 - \mu_m}{s_m}\right) - \sigma\!\left(\frac{x_i - 0.5 - \mu_m}{s_m}\right)$$
+  </p>
+  <p>
+    where $\sigma$ is the sigmoid function, $\pi_m$ are mixture weights, $\mu_m$ are means, and $s_m$ are scales. This uses far fewer parameters (typically $M = 5$–$10$ components) while capturing the same distributional richness.
+  </p>
+
+  <!-- ═══════════ SECTION 5 – Training ═══════════ -->
+  <h2>Training: Maximum Likelihood and Teacher Forcing</h2>
+  <p>
+    Training an autoregressive model is beautifully simple compared to GANs. We maximize the <strong>exact log-likelihood</strong> of the training data:
+  </p>
+  <p>
+    $$\max_\theta \; \mathbb{E}_{x \sim p_{\text{data}}} \left[ \sum_{i=1}^{N} \log p_\theta(x_i \mid x_{&lt;i}) \right]$$
+  </p>
+  <p>Equivalently, we <em>minimize</em> the negative log-likelihood (NLL):</p>
+  <p>
+    $$\boxed{\mathcal{L}_{\text{AR}} = -\sum_{i=1}^{N} \log p_\theta(x_i \mid x_{&lt;i})}$$
+  </p>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 1 — Cross-entropy interpretation</div>
+    <p>For the categorical output, the loss at position $i$ is the standard categorical cross-entropy: pick the probability the model assigned to the <em>true</em> pixel value and take its negative log. High confidence on the correct value → low loss.</p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 2 — Bits per dimension</div>
+    <p>To compare across different image sizes, we report loss in <strong>bits per dimension (bpd)</strong>:</p>
+    <p>$$\text{bpd} = \frac{-\sum_{i=1}^{N} \log_2 p_\theta(x_i \mid x_{&lt;i})}{N}$$</p>
+    <p>For 8-bit images, the theoretical maximum is 8 bpd (uniform). State-of-the-art models achieve ~3–4 bpd on natural images.</p>
+  </div>
+
+  <div class="derivation-step">
+    <div class="step-label">Step 3 — Teacher forcing enables parallelism</div>
+    <p>During training, we feed the <strong>ground-truth</strong> context $x_{&lt;i}$ at every position simultaneously. This is called <strong>teacher forcing</strong>. Because the architecture uses causal masks, all $N$ conditional log-probabilities can be computed in a <strong>single forward pass</strong>. The slowness of autoregressive models only appears at <em>generation</em> time.</p>
+  </div>
+
+  <div class="intuition-box">
+    Teacher forcing is like giving a student the answers to questions 1 through 99, and asking them to predict question 100 — but doing this for all 100 questions simultaneously. Each position sees only the ground-truth past, never its own predictions.
+  </div>
+
+  <!-- ═══════════ SECTION 6 – Masked Convolutions ═══════════ -->
+  <h2>Architecture: Masked Convolutions (PixelCNN)</h2>
+  <p>
+    How do we enforce the autoregressive property inside a convolutional neural network? Standard convolutions look at all neighbors, including the future. The answer is <strong>masked convolutions</strong>.
+  </p>
+
+  <h3>Mask Type A (First Layer)</h3>
+  <p>The first convolutional layer uses a <strong>Type A mask</strong>: the center pixel is zeroed out along with all positions below and to the right:</p>
+  <p>
+    $$M_A = \begin{pmatrix} 1 & 1 & 1 & 1 & 1 \\ 1 & 1 & 1 & 1 & 1 \\ 1 & 1 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 & 0 \end{pmatrix}$$
+  </p>
+
+  <h3>Mask Type B (Subsequent Layers)</h3>
+  <p>Subsequent layers use a <strong>Type B mask</strong> — identical except the center pixel is <em>included</em>:</p>
+  <p>
+    $$M_B = \begin{pmatrix} 1 & 1 & 1 & 1 & 1 \\ 1 & 1 & 1 & 1 & 1 \\ 1 & 1 & 1 & 0 & 0 \\ 0 & 0 & 0 & 0 & 0 \\ 0 & 0 & 0 & 0 & 0 \end{pmatrix}$$
+  </p>
+
+  <div class="intuition-box">
+    The masked convolution is the image equivalent of the causal attention mask in GPT. In GPT, each token can attend to all previous tokens but not future ones. In PixelCNN, each pixel's convolution can "see" all previous pixels (above and to the left) but not future ones. The mask literally zeros out the forbidden connections.
+  </div>
+
+  <!-- Interactive 2: Masked Convolution Receptive Field -->
+  <div class="interactive-container" id="maskContainer">
+    <h4>Interactive · Masked Convolution Receptive Field</h4>
+    <div class="mask-grid-wrapper">
+      <div class="mask-panel">
+        <div class="panel-label">Image Grid (hover to select pixel)</div>
+        <canvas id="maskGridCanvas" width="320" height="320"></canvas>
+      </div>
+      <div class="mask-panel">
+        <div class="panel-label">Receptive Field</div>
+        <canvas id="maskFieldCanvas" width="320" height="320"></canvas>
+      </div>
+    </div>
+    <div class="control-panel">
+      <p><strong>Hover</strong> over the left grid to select a target pixel (shown in <strong style="color:red">red</strong>). The right grid highlights in <strong style="color:#f59e0b">amber</strong> the receptive field — all pixels that can influence the prediction.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ SECTION 7 – Blind Spot ═══════════ -->
+  <h2>The Blind Spot Problem</h2>
+  <p>
+    The original PixelCNN has a subtle flaw. Stacking masked convolutions creates a <strong>blind spot</strong>: certain pixels in the valid causal region are never reached by the receptive field.
+  </p>
+  <p>
+    <strong>Gated PixelCNN</strong> (van den Oord et al., 2016) solves this by splitting the computation into two streams:
+  </p>
+  <ul>
+    <li><strong>Vertical stack:</strong> A convolution that sees all rows above the current row.</li>
+    <li><strong>Horizontal stack:</strong> A 1D convolution along the current row, conditioned on the vertical stack's output.</li>
+  </ul>
+  <p>Additionally, Gated PixelCNN uses <strong>gated activations</strong>:</p>
+  <p>$$y = \tanh(W_f * x) \odot \sigma(W_g * x)$$</p>
+  <p>where $W_f$ and $W_g$ are separate convolution filters and $\sigma$ is the sigmoid function.</p>
+
+  <!-- ═══════════ SECTION 8 – Sampling ═══════════ -->
+  <h2>Sampling: Temperature, Top-k, and Top-p</h2>
+  <p>
+    At generation time, the model outputs a distribution at each step. We control the trade-off between <strong>diversity</strong> and <strong>quality</strong> using several strategies.
+  </p>
+
+  <h3>Temperature Scaling</h3>
+  <p>We modify the softmax with a <strong>temperature</strong> parameter $\tau > 0$:</p>
+  <p>$$p_\tau(x_i = k) = \frac{\exp(f_k / \tau)}{\sum_{j=0}^{255} \exp(f_j / \tau)}$$</p>
+  <ul>
+    <li>$\tau = 1$: original distribution.</li>
+    <li>$\tau &lt; 1$: <strong>sharper</strong> — more confident, more coherent but repetitive.</li>
+    <li>$\tau > 1$: <strong>flatter</strong> — more diverse but potentially noisy.</li>
+    <li>$\tau \to 0$: collapses to <strong>argmax</strong> (greedy decoding).</li>
+    <li>$\tau \to \infty$: approaches <strong>uniform</strong> distribution (pure noise).</li>
+  </ul>
+
+  <h3>Top-k Sampling</h3>
+  <p>Restrict to the <strong>top-$k$</strong> most probable values and renormalize. Prevents the model from choosing very unlikely pixel values that cascade into artifacts.</p>
+
+  <h3>Top-p (Nucleus) Sampling</h3>
+  <p>Dynamically selects the smallest set of values whose cumulative probability exceeds threshold $p$. Adapts to the shape of the distribution.</p>
+
+  <!-- Interactive 3: Temperature Sampling -->
+  <div class="interactive-container" id="tempContainer">
+    <h4>Interactive · Temperature Sampling</h4>
+    <div class="slider-row">
+      <label>Temperature τ:</label>
+      <input type="range" id="tempSlider" min="0.1" max="3.0" step="0.1" value="1.0">
+      <span class="val" id="tempVal">1.0</span>
+    </div>
+    <div class="side-panels">
+      <div class="panel">
+        <div class="panel-label">Probability Distribution</div>
+        <canvas id="tempDistCanvas" width="320" height="200"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Sampled Outputs (10 draws)</div>
+        <canvas id="tempSampleCanvas" width="200" height="200"></canvas>
+      </div>
+    </div>
+    <div class="control-panel">
+      <p>Drag the temperature slider to see how the distribution sharpens (τ &lt; 1) or flattens (τ > 1). The right panel shows 10 sampled pixel colors — low temperature gives consistent colors, high temperature gives wild variety.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ SECTION 9 – Pixels to Tokens ═══════════ -->
+  <h2>From Pixels to Tokens: The Modern Approach</h2>
+  <p>
+    Operating on raw pixels is expensive. Modern autoregressive image models avoid this bottleneck by working on <strong>discrete tokens</strong> instead.
+  </p>
+
+  <h3>Step 1: VQ-VAE Tokenization</h3>
+  <p>A <strong>Vector-Quantized VAE (VQ-VAE)</strong> compresses image patches into a discrete codebook. A 256×256 image becomes a 32×32 grid of tokens from a codebook of $K = 8192$ entries — $1{,}024$ tokens instead of $196{,}608$ sub-pixels, a <strong>192× compression</strong>.</p>
+
+  <h3>Step 2: Autoregressive Model on Tokens</h3>
+  <p>A Transformer is trained autoregressively on the discrete token sequences:</p>
+  <p>$$p(z) = \prod_{i=1}^{M} p(z_i \mid z_1, \dots, z_{i-1})$$</p>
+  <p>where $z_i \in \{1, \dots, K\}$ are VQ-VAE token indices and $M = 1024$.</p>
+
+  <h3>Step 3: Decode Back to Pixels</h3>
+  <p>The VQ-VAE decoder maps each token back to its codebook vector and upsamples to full resolution.</p>
+
+  <div class="intuition-box">
+    This is exactly how modern language models work with text: they predict tokens (sub-words), not individual characters. Modern autoregressive image models predict <em>image tokens</em> that represent entire patches. This is the architecture behind DALL-E (2021), Parti (2022), and the image generation modes of GPT-4.
+  </div>
+
+  <!-- Interactive 4: Pixel vs Token comparison -->
+  <div class="interactive-container" id="tokenContainer">
+    <h4>Interactive · Pixels vs. Tokens: Sequence Length</h4>
+    <div class="slider-row">
+      <label>Image resolution:</label>
+      <input type="range" id="resSlider" min="4" max="512" step="4" value="256">
+      <span class="val" id="resVal">256×256</span>
+    </div>
+    <div class="slider-row">
+      <label>Patch size (tokenizer):</label>
+      <input type="range" id="patchSlider" min="2" max="32" step="2" value="8">
+      <span class="val" id="patchVal">8×8</span>
+    </div>
+    <div class="side-panels">
+      <div class="panel">
+        <canvas id="seqCanvas" width="460" height="220"></canvas>
+      </div>
+    </div>
+    <div class="control-panel" id="seqInfo">
+      <p>Pixel-level: <strong>196,608</strong> steps · Token-level: <strong>1,024</strong> steps · <strong>192×</strong> fewer steps</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ SECTION 10 – Conditional Distribution ═══════════ -->
+  <h2>Interactive: The Conditional Distribution</h2>
+  <p>
+    At each step, the autoregressive model outputs a full distribution over the next pixel's value. Early pixels (little context) have broad, uncertain distributions. Later pixels (rich context) have sharper, more confident predictions.
+  </p>
+
+  <div class="interactive-container" id="condDistContainer">
+    <h4>Interactive · Next-Pixel Conditional Distribution</h4>
+    <div class="side-panels">
+      <div class="panel">
+        <div class="panel-label">Generation Progress</div>
+        <canvas id="condGridCanvas" width="260" height="260"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-label">$p_\theta(x_i \mid x_{&lt;i})$ for current pixel</div>
+        <canvas id="condBarCanvas" width="300" height="260"></canvas>
+      </div>
+    </div>
+    <div class="btn-row">
+        <button class="train-btn btn-primary" id="condStepBtn" onclick="COND.step()">Next Pixel</button>
+        <button class="train-btn btn-play" id="condPlayBtn" onclick="COND.togglePlay()">Auto-Play</button>
+        <button class="train-btn btn-reset" onclick="COND.reset()">Reset</button>
+        <span class="epoch-display" id="condStatus">Step 0 / 256</span>
+    </div>
+    <div class="control-panel">
+      <p>Each bar shows probability for an intensity range. The <strong style="color:#f59e0b">highlighted bar</strong> is the sampled value. Notice how the distribution sharpens as more context becomes available.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ SECTION 11 – Strengths & Weaknesses ═══════════ -->
+  <h2>Strengths &amp; Weaknesses</h2>
+
+  <h3>Strengths</h3>
+  <ul>
+    <li><strong>Exact log-likelihoods:</strong> Unlike VAEs (lower bound) or GANs (no density at all), AR models optimize the <em>exact</em> log-likelihood. Training is stable and doesn't suffer from mode collapse.</li>
+    <li><strong>No adversarial training:</strong> No Discriminator, no minimax game, no training instability. Just straightforward maximum likelihood.</li>
+    <li><strong>Global coherence:</strong> The model conditions on the entire generated history, maintaining long-range consistency.</li>
+    <li><strong>Flexible conditioning:</strong> Natural to condition on text, class labels, or partial images by prepending tokens to the context.</li>
+    <li><strong>Unified framework:</strong> The same architecture handles text, images, audio, and video — the philosophy behind GPT-4 and Gemini.</li>
+  </ul>
+
+  <h3>Weaknesses</h3>
+  <ul>
+    <li><strong>Sequential generation (slow):</strong> To generate $N$ pixels/tokens, the model must run $N$ sequential forward passes. For pixel-level: 196,608 passes. Even with tokens (1,024 passes), this is far slower than GANs (1 pass) or Diffusion (50–100 passes).</li>
+    <li><strong>Order bias:</strong> The raster scan is arbitrary. The model cannot "look ahead" — mistakes in early rows cannot be corrected.</li>
+    <li><strong>Exposure bias:</strong> At training the model sees ground-truth context; at generation it conditions on its own (potentially erroneous) outputs. This mismatch can cause errors to compound.</li>
+    <li><strong>Compute cost:</strong> Self-attention over long pixel sequences is $O(N^2)$. Token-level models mitigate this but introduce a lossy VQ-VAE compression step.</li>
+  </ul>
+
+  <!-- Interactive 5: Speed Comparison -->
+  <div class="interactive-container" id="speedContainer">
+    <h4>Interactive · Generation Speed Comparison</h4>
+    <div class="canvas-wrapper">
+      <canvas id="speedCanvas" width="560" height="280"></canvas>
+    </div>
+    <div class="btn-row">
+      <button class="train-btn btn-play" id="speedBtn" onclick="SPEED.start()">Start Race</button>
+      <button class="train-btn btn-reset" onclick="SPEED.reset()">Reset</button>
+    </div>
+    <div class="control-panel">
+      <p>A stylized comparison of forward passes needed to generate an image. GANs: <strong>1 pass</strong>. Diffusion: <strong>~50</strong>. AR tokens: <strong>~1,024</strong>. Watch the bars fill at their relative rates.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ SECTION 12 – Summary ═══════════ -->
+  <h2>Summary</h2>
+  <p>
+    Autoregressive image models bring the same principle that powers GPT to visual data: decompose the joint distribution into a product of conditionals and learn each one with a neural network.
+  </p>
+  <ul>
+    <li>The <strong>chain rule</strong> $p(x) = \prod_i p(x_i \mid x_{&lt;i})$ provides an exact factorization.</li>
+    <li><strong>Masked convolutions</strong> (PixelCNN) or <strong>causal attention</strong> (ImageGPT) enforce the autoregressive ordering.</li>
+    <li>Training maximizes the <strong>exact log-likelihood</strong> via teacher forcing.</li>
+    <li>Modern approaches use <strong>VQ-VAE tokenization</strong> to compress images into short discrete sequences.</li>
+    <li><strong>Temperature, top-k, and top-p</strong> sampling control diversity–quality at generation time.</li>
+  </ul>
+  <p>
+    The fundamental trade-off: exact likelihoods and stable training at the cost of <strong>slow, sequential generation</strong>. This motivates hybrid approaches combining autoregressive models with parallel generation of diffusion models — explored in the next section on <strong>Diffusion Transformers</strong>.
   </p>
 
 </dt-article>
 
 <script>
-    const canvas = document.getElementById('arCanvas');
-    const ctx = canvas.getContext('2d');
-    const statusDiv = document.getElementById('status');
-    const playBtn = document.getElementById('playBtn');
+// ── Utility: seeded PRNG ──
+function mulberry32(a) {
+    return function() {
+        a |= 0; a = a + 0x6D2B79F5 | 0;
+        var t = Math.imul(a ^ a >>> 15, 1 | a);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+}
 
-    // Grid Config
-    const gridRes = 16; // 16x16 grid
-    const pixelSize = canvas.width / gridRes;
-    const totalPixels = gridRes * gridRes;
-    
-    let currentStep = 0;
-    let isPlaying = false;
-    let animationFrame;
+// ═══════════════════════════════════════════
+// 1. Raster Scan Autoregressive Generation
+// ═══════════════════════════════════════════
+var AR = (function() {
+    var canvas = document.getElementById('arCanvas');
+    if (!canvas) return {};
+    var ctx = canvas.getContext('2d');
+    var statusSpan = document.getElementById('arStatus');
+    var gridRes = 16, pixelSize = canvas.width / 16, totalPixels = 256;
+    var currentStep = 0, isPlaying = false;
 
-    // Define the "Target" image (A simple Alien Sprite or Shape)
-    const targetImage = [];
-    
-    // Procedurally generate a target image (Symmetric Invader style)
-    for(let y=0; y<gridRes; y++) {
-        for(let x=0; x<gridRes; x++) {
-            // Simple logic for a shape
-            let isPixel = false;
-            
-            // Central symmetry check
-            const distFromCenter = Math.abs(x - 7.5);
-            const yNorm = y / gridRes;
-
-            // Alien head shape logic
+    var rand = mulberry32(42);
+    var targetImage = [];
+    for (var y = 0; y < gridRes; y++) {
+        for (var x = 0; x < gridRes; x++) {
+            var isPixel = false;
+            var distFromCenter = Math.abs(x - 7.5);
             if (y > 3 && y < 13 && distFromCenter < 5) isPixel = true;
             if (y > 5 && y < 10 && distFromCenter < 7) isPixel = true;
-            // Eyes
-            if (y === 6 && (x===5 || x===10)) isPixel = false;
-            
-            // Color logic
-            if (isPixel) {
-                targetImage.push('rgb(79, 70, 229)'); // Indigo
-            } else {
-                targetImage.push('rgb(243, 244, 246)'); // Grey background
-            }
+            if (y === 6 && (x === 5 || x === 10)) isPixel = false;
+            if (y === 8 && x >= 6 && x <= 9) isPixel = false;
+            targetImage.push(isPixel ? 'rgb(79,70,229)' : 'rgb(243,244,246)');
         }
     }
 
     function drawGrid() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        for (let i = 0; i < totalPixels; i++) {
-            const x = (i % gridRes) * pixelSize;
-            const y = Math.floor(i / gridRes) * pixelSize;
-
+        for (var i = 0; i < totalPixels; i++) {
+            var x = (i % gridRes) * pixelSize, y = Math.floor(i / gridRes) * pixelSize;
             if (i < currentStep) {
-                // Past (Generated)
                 ctx.fillStyle = targetImage[i];
                 ctx.fillRect(x, y, pixelSize, pixelSize);
-                ctx.strokeStyle = '#e5e7eb';
+                ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 0.5;
                 ctx.strokeRect(x, y, pixelSize, pixelSize);
             } else if (i === currentStep) {
-                // Present (Being Predicted) - The "Cursor"
-                ctx.fillStyle = '#fca5a5'; // Light red placeholder
+                ctx.fillStyle = '#fca5a5';
                 ctx.fillRect(x, y, pixelSize, pixelSize);
-                ctx.strokeStyle = 'red';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, y, pixelSize, pixelSize);
-                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'red'; ctx.lineWidth = 2.5;
+                ctx.strokeRect(x + 1, y + 1, pixelSize - 2, pixelSize - 2);
             } else {
-                // Future (Masked)
                 ctx.fillStyle = '#fff';
                 ctx.fillRect(x, y, pixelSize, pixelSize);
-                ctx.strokeStyle = '#eee';
+                ctx.strokeStyle = '#eee'; ctx.lineWidth = 0.5;
                 ctx.strokeRect(x, y, pixelSize, pixelSize);
             }
         }
     }
 
     function updateStatus() {
-        const x = currentStep % gridRes;
-        const y = Math.floor(currentStep / gridRes);
-        statusDiv.innerHTML = `Predicting Pixel (${x}, ${y}) [Index ${currentStep}]<br>Conditioned on ${currentStep} previous tokens.`;
+        if (currentStep >= totalPixels) { statusSpan.textContent = 'Complete! (256/256)'; return; }
+        statusSpan.textContent = 'Pixel (' + (currentStep % gridRes) + ',' + Math.floor(currentStep / gridRes) + ') — Step ' + currentStep + '/256';
     }
 
     function step() {
-        if (currentStep < totalPixels) {
-            currentStep++;
-            drawGrid();
-            updateStatus();
-        } else {
-            isPlaying = false;
-            playBtn.innerText = "Auto-Complete";
-            statusDiv.innerHTML = "Generation Complete.";
-        }
+        if (currentStep < totalPixels) { currentStep++; drawGrid(); updateStatus(); }
+        if (currentStep >= totalPixels) { isPlaying = false; document.getElementById('playBtn').textContent = 'Auto-Complete'; }
     }
 
     function autoPlay() {
         if (!isPlaying) return;
         step();
-        if (currentStep < totalPixels) {
-            // Speed up as it goes
-            const delay = Math.max(10, 50 - (currentStep * 0.1));
-            setTimeout(() => requestAnimationFrame(autoPlay), delay);
-        }
+        if (currentStep < totalPixels) setTimeout(function(){ requestAnimationFrame(autoPlay); }, Math.max(8, 40 - currentStep * 0.1));
     }
 
     function togglePlay() {
-        if (isPlaying) {
-            isPlaying = false;
-            playBtn.innerText = "Auto-Complete";
-        } else {
-            isPlaying = true;
-            playBtn.innerText = "Pause";
-            autoPlay();
-        }
+        if (isPlaying) { isPlaying = false; document.getElementById('playBtn').textContent = 'Auto-Complete'; }
+        else { isPlaying = true; document.getElementById('playBtn').textContent = 'Pause'; autoPlay(); }
     }
 
     function reset() {
-        isPlaying = false;
-        currentStep = 0;
-        playBtn.innerText = "Auto-Complete";
-        drawGrid();
-        statusDiv.innerHTML = "Step 0/256<br>Context: Empty";
+        isPlaying = false; currentStep = 0;
+        document.getElementById('playBtn').textContent = 'Auto-Complete';
+        drawGrid(); updateStatus();
     }
 
-    // Init
-    drawGrid();
+    drawGrid(); updateStatus();
+    return { step: step, togglePlay: togglePlay, reset: reset };
+})();
 
+// ═══════════════════════════════════════════
+// 2. Masked Convolution Receptive Field
+// ═══════════════════════════════════════════
+(function() {
+    var gridCanvas = document.getElementById('maskGridCanvas');
+    var fieldCanvas = document.getElementById('maskFieldCanvas');
+    if (!gridCanvas || !fieldCanvas) return;
+    var gCtx = gridCanvas.getContext('2d'), fCtx = fieldCanvas.getContext('2d');
+    var gridRes = 16, cellSize = gridCanvas.width / gridRes;
+    var hoverR = 8, hoverC = 8;
+
+    var rand = mulberry32(99);
+    var gridColors = [];
+    for (var i = 0; i < 256; i++) gridColors.push('hsl(' + (rand() * 360) + ',60%,75%)');
+
+    function draw() {
+        gCtx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
+        fCtx.clearRect(0, 0, fieldCanvas.width, fieldCanvas.height);
+        var targetIdx = hoverR * gridRes + hoverC;
+
+        for (var r = 0; r < gridRes; r++) {
+            for (var c = 0; c < gridRes; c++) {
+                var idx = r * gridRes + c;
+                // Left grid: colored image
+                gCtx.fillStyle = gridColors[idx];
+                gCtx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                gCtx.strokeStyle = 'rgba(255,255,255,0.5)'; gCtx.lineWidth = 0.5;
+                gCtx.strokeRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                // Right grid: receptive field
+                if (idx < targetIdx) fCtx.fillStyle = 'rgba(245,158,11,0.6)';
+                else if (idx === targetIdx) fCtx.fillStyle = 'rgba(239,68,68,0.8)';
+                else fCtx.fillStyle = '#f5f5f5';
+                fCtx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                fCtx.strokeStyle = 'rgba(0,0,0,0.08)'; fCtx.lineWidth = 0.5;
+                fCtx.strokeRect(c * cellSize, r * cellSize, cellSize, cellSize);
+            }
+        }
+        // Highlight on left grid
+        gCtx.strokeStyle = 'red'; gCtx.lineWidth = 3;
+        gCtx.strokeRect(hoverC * cellSize + 1.5, hoverR * cellSize + 1.5, cellSize - 3, cellSize - 3);
+        // Label on right grid
+        if (targetIdx > 0) {
+            fCtx.font = '10px sans-serif'; fCtx.textAlign = 'center'; fCtx.fillStyle = '#92400e';
+            fCtx.fillText('Context (' + targetIdx + ' pixels)', fieldCanvas.width / 2, fieldCanvas.height - 6);
+        }
+    }
+
+    gridCanvas.addEventListener('mousemove', function(e) {
+        var rect = gridCanvas.getBoundingClientRect();
+        hoverC = Math.max(0, Math.min(gridRes - 1, Math.floor((e.clientX - rect.left) / cellSize)));
+        hoverR = Math.max(0, Math.min(gridRes - 1, Math.floor((e.clientY - rect.top) / cellSize)));
+        draw();
+    });
+    draw();
+})();
+
+// ═══════════════════════════════════════════
+// 3. Temperature Sampling
+// ═══════════════════════════════════════════
+(function() {
+    var slider = document.getElementById('tempSlider');
+    var valSpan = document.getElementById('tempVal');
+    var distCanvas = document.getElementById('tempDistCanvas');
+    var sampleCanvas = document.getElementById('tempSampleCanvas');
+    if (!distCanvas || !sampleCanvas) return;
+    var dCtx = distCanvas.getContext('2d'), sCtx = sampleCanvas.getContext('2d');
+    var nBins = 20, rawLogits = [], rand = mulberry32(77);
+    for (var i = 0; i < nBins; i++) {
+        var xv = i / nBins;
+        rawLogits.push(3 * Math.exp(-((xv - 0.25) ** 2) / 0.01) + 2 * Math.exp(-((xv - 0.7) ** 2) / 0.02) + (rand() - 0.5) * 0.5);
+    }
+
+    function softmax(logits, temp) {
+        var scaled = logits.map(function(l) { return l / temp; });
+        var mx = Math.max.apply(null, scaled);
+        var exps = scaled.map(function(l) { return Math.exp(l - mx); });
+        var s = exps.reduce(function(a, b) { return a + b; }, 0);
+        return exps.map(function(e) { return e / s; });
+    }
+
+    function sampleFrom(probs) {
+        var r = Math.random();
+        for (var i = 0; i < probs.length; i++) { r -= probs[i]; if (r <= 0) return i; }
+        return probs.length - 1;
+    }
+
+    function update() {
+        var temp = parseFloat(slider.value);
+        valSpan.textContent = temp.toFixed(1);
+        var probs = softmax(rawLogits, temp);
+        // Distribution plot
+        var DW = 320, DH = 200;
+        dCtx.clearRect(0, 0, DW, DH);
+        var pad = { l: 35, r: 10, t: 10, b: 30 }, pw = DW - pad.l - pad.r, ph = DH - pad.t - pad.b;
+        var barW = pw / nBins - 2, maxP = Math.max.apply(null, probs.concat([0.001]));
+        dCtx.strokeStyle = '#ccc'; dCtx.lineWidth = 1; dCtx.beginPath();
+        dCtx.moveTo(pad.l, DH - pad.b); dCtx.lineTo(DW - pad.r, DH - pad.b);
+        dCtx.moveTo(pad.l, DH - pad.b); dCtx.lineTo(pad.l, pad.t); dCtx.stroke();
+        for (var i = 0; i < nBins; i++) {
+            var bx = pad.l + (i / nBins) * pw + 1, bh = (probs[i] / maxP) * ph;
+            var g = dCtx.createLinearGradient(bx, DH - pad.b - bh, bx, DH - pad.b);
+            g.addColorStop(0, 'rgba(245,158,11,0.9)'); g.addColorStop(1, 'rgba(245,158,11,0.4)');
+            dCtx.fillStyle = g; dCtx.fillRect(bx, DH - pad.b - bh, barW, bh);
+        }
+        dCtx.fillStyle = '#999'; dCtx.font = '10px sans-serif'; dCtx.textAlign = 'center';
+        dCtx.fillText('Pixel Intensity \u2192', DW / 2, DH - 4);
+        // Samples
+        var SW = 200, SH = 200;
+        sCtx.clearRect(0, 0, SW, SH);
+        var cols = 5, rows = 2, sz = 30;
+        var gapX = (SW - cols * sz) / (cols + 1), gapY = (SH - rows * sz) / (rows + 1);
+        for (var row = 0; row < rows; row++) {
+            for (var col = 0; col < cols; col++) {
+                var idx = sampleFrom(probs);
+                var intensity = Math.round((idx / (nBins - 1)) * 255);
+                var cx = gapX + col * (sz + gapX) + sz / 2, cy = gapY + row * (sz + gapY) + sz / 2;
+                sCtx.fillStyle = 'rgb(' + intensity + ',' + intensity + ',' + intensity + ')';
+                sCtx.beginPath(); sCtx.arc(cx, cy, sz / 2, 0, Math.PI * 2); sCtx.fill();
+                sCtx.strokeStyle = '#ccc'; sCtx.lineWidth = 1; sCtx.stroke();
+                sCtx.fillStyle = intensity < 128 ? '#fff' : '#333'; sCtx.font = '9px monospace'; sCtx.textAlign = 'center';
+                sCtx.fillText(intensity, cx, cy + 3);
+            }
+        }
+    }
+    slider.addEventListener('input', update);
+    update();
+})();
+
+// ═══════════════════════════════════════════
+// 4. Pixel vs Token Sequence Length
+// ═══════════════════════════════════════════
+(function() {
+    var resSlider = document.getElementById('resSlider'), patchSlider = document.getElementById('patchSlider');
+    var resVal = document.getElementById('resVal'), patchVal = document.getElementById('patchVal');
+    var canvas = document.getElementById('seqCanvas'), infoDiv = document.getElementById('seqInfo');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d'), W = 460, H = 220;
+
+    function draw() {
+        var res = parseInt(resSlider.value), patch = parseInt(patchSlider.value);
+        resVal.textContent = res + '\u00d7' + res; patchVal.textContent = patch + '\u00d7' + patch;
+        var pixelSteps = res * res * 3, tokenSteps = Math.ceil(res / patch) * Math.ceil(res / patch);
+        var ratio = pixelSteps / Math.max(tokenSteps, 1);
+        ctx.clearRect(0, 0, W, H);
+        var pad = { l: 120, r: 30, t: 30, b: 50 }, pw = W - pad.l - pad.r, barH = 40;
+        var maxVal = Math.max(pixelSteps, 200000);
+        var pixW = Math.min((pixelSteps / maxVal) * pw, pw);
+        var tokW = Math.max(Math.min((tokenSteps / maxVal) * pw, pw), 4);
+        ctx.font = '13px sans-serif'; ctx.fillStyle = '#333'; ctx.textAlign = 'right';
+        ctx.fillText('Pixel-level', pad.l - 10, pad.t + barH / 2 + 4);
+        ctx.fillText('Token-level', pad.l - 10, pad.t + barH + 30 + barH / 2 + 4);
+        var g1 = ctx.createLinearGradient(pad.l, 0, pad.l + pixW, 0);
+        g1.addColorStop(0, '#ef4444'); g1.addColorStop(1, '#f87171');
+        ctx.fillStyle = g1; ctx.fillRect(pad.l, pad.t, pixW, barH);
+        if (pixW > 80) { ctx.fillStyle = '#fff'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.fillText(pixelSteps.toLocaleString() + ' steps', pad.l + 8, pad.t + barH / 2 + 4); }
+        var g2 = ctx.createLinearGradient(pad.l, 0, pad.l + tokW, 0);
+        g2.addColorStop(0, '#22c55e'); g2.addColorStop(1, '#4ade80');
+        ctx.fillStyle = g2; ctx.fillRect(pad.l, pad.t + barH + 30, tokW, barH);
+        ctx.fillStyle = tokW > 60 ? '#fff' : '#333'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+        ctx.fillText(tokenSteps.toLocaleString() + ' steps', pad.l + tokW + 6, pad.t + barH + 30 + barH / 2 + 4);
+        infoDiv.innerHTML = '<p>Pixel-level: <strong>' + pixelSteps.toLocaleString() + '</strong> steps \u00b7 Token-level: <strong>' + tokenSteps.toLocaleString() + '</strong> steps \u00b7 <strong>' + ratio.toFixed(0) + '\u00d7</strong> fewer steps</p>';
+    }
+    resSlider.addEventListener('input', draw); patchSlider.addEventListener('input', draw);
+    draw();
+})();
+
+// ═══════════════════════════════════════════
+// 5. Conditional Distribution Visualizer
+// ═══════════════════════════════════════════
+var COND = (function() {
+    var gridCanvas = document.getElementById('condGridCanvas');
+    var barCanvas = document.getElementById('condBarCanvas');
+    if (!gridCanvas || !barCanvas) return {};
+    var gCtx = gridCanvas.getContext('2d'), bCtx = barCanvas.getContext('2d');
+    var statusSpan = document.getElementById('condStatus');
+    var gridRes = 16, cellSize = gridCanvas.width / gridRes, totalPixels = 256;
+    var currentStep = 0, isPlaying = false;
+
+    var rand = mulberry32(123);
+    var targetValues = [];
+    for (var r = 0; r < gridRes; r++) {
+        for (var c = 0; c < gridRes; c++) {
+            var dist = Math.sqrt((r - 8) * (r - 8) + (c - 8) * (c - 8));
+            targetValues.push(Math.round(dist < 5 ? 40 + rand() * 30 : 180 + rand() * 40));
+        }
+    }
+
+    function drawGrid() {
+        gCtx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
+        for (var i = 0; i < totalPixels; i++) {
+            var c = i % gridRes, r = Math.floor(i / gridRes);
+            var x = c * cellSize, y = r * cellSize;
+            if (i < currentStep) { var v = targetValues[i]; gCtx.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')'; }
+            else if (i === currentStep) { gCtx.fillStyle = '#fca5a5'; }
+            else { gCtx.fillStyle = '#f9f9f9'; }
+            gCtx.fillRect(x, y, cellSize, cellSize);
+            if (i === currentStep) { gCtx.strokeStyle = 'red'; gCtx.lineWidth = 2.5; gCtx.strokeRect(x + 1, y + 1, cellSize - 2, cellSize - 2); }
+            gCtx.strokeStyle = 'rgba(0,0,0,0.06)'; gCtx.lineWidth = 0.5; gCtx.strokeRect(x, y, cellSize, cellSize);
+        }
+    }
+
+    function drawBars() {
+        var BW = 300, BH = 260;
+        bCtx.clearRect(0, 0, BW, BH);
+        if (currentStep >= totalPixels) { bCtx.fillStyle = '#888'; bCtx.font = '14px sans-serif'; bCtx.textAlign = 'center'; bCtx.fillText('Generation Complete', BW / 2, BH / 2); return; }
+        var nBins = 16, trueVal = targetValues[currentStep];
+        var trueBin = Math.floor(trueVal / 256 * nBins);
+        var sharpness = 0.5 + (currentStep / totalPixels) * 4.0;
+        var probs = [], sum = 0;
+        for (var b = 0; b < nBins; b++) { var p = Math.exp(-sharpness * Math.abs(b - trueBin)); probs.push(p); sum += p; }
+        for (var b = 0; b < nBins; b++) probs[b] /= sum;
+        var pad = { l: 40, r: 10, t: 20, b: 40 }, pw = BW - pad.l - pad.r, ph = BH - pad.t - pad.b;
+        var barW = pw / nBins - 2, maxP = Math.max.apply(null, probs.concat([0.001]));
+        bCtx.strokeStyle = '#ccc'; bCtx.lineWidth = 1; bCtx.beginPath();
+        bCtx.moveTo(pad.l, BH - pad.b); bCtx.lineTo(BW - pad.r, BH - pad.b);
+        bCtx.moveTo(pad.l, BH - pad.b); bCtx.lineTo(pad.l, pad.t); bCtx.stroke();
+        for (var b = 0; b < nBins; b++) {
+            var bx = pad.l + (b / nBins) * pw + 1, bh = (probs[b] / maxP) * ph;
+            bCtx.fillStyle = (b === trueBin) ? 'rgba(245,158,11,0.9)' : 'rgba(100,116,139,0.4)';
+            bCtx.fillRect(bx, BH - pad.b - bh, barW, bh);
+            if (b === trueBin) { bCtx.strokeStyle = '#d97706'; bCtx.lineWidth = 2; bCtx.strokeRect(bx, BH - pad.b - bh, barW, bh); }
+        }
+        bCtx.fillStyle = '#999'; bCtx.font = '10px sans-serif'; bCtx.textAlign = 'center';
+        bCtx.fillText('Intensity Range \u2192', BW / 2, BH - 6);
+        bCtx.fillStyle = '#666'; bCtx.textAlign = 'right';
+        bCtx.fillText('Context: ' + currentStep + ' pixels', BW - pad.r, pad.t - 4);
+    }
+
+    function updateStatus() {
+        statusSpan.textContent = currentStep >= totalPixels ? 'Complete!' : 'Step ' + currentStep + ' / 256';
+    }
+
+    function step() {
+        if (currentStep < totalPixels) { currentStep++; drawGrid(); drawBars(); updateStatus(); }
+        if (currentStep >= totalPixels) { isPlaying = false; document.getElementById('condPlayBtn').textContent = 'Auto-Play'; }
+    }
+
+    function autoPlay() {
+        if (!isPlaying) return;
+        step();
+        if (currentStep < totalPixels) setTimeout(function() { requestAnimationFrame(autoPlay); }, Math.max(8, 50 - currentStep * 0.15));
+    }
+
+    function togglePlay() {
+        if (isPlaying) { isPlaying = false; document.getElementById('condPlayBtn').textContent = 'Auto-Play'; }
+        else { isPlaying = true; document.getElementById('condPlayBtn').textContent = 'Pause'; autoPlay(); }
+    }
+
+    function reset() {
+        isPlaying = false; currentStep = 0;
+        document.getElementById('condPlayBtn').textContent = 'Auto-Play';
+        drawGrid(); drawBars(); updateStatus();
+    }
+
+    drawGrid(); drawBars(); updateStatus();
+    return { step: step, togglePlay: togglePlay, reset: reset };
+})();
+
+// ═══════════════════════════════════════════
+// 6. Speed Comparison Race
+// ═══════════════════════════════════════════
+var SPEED = (function() {
+    var canvas = document.getElementById('speedCanvas');
+    if (!canvas) return {};
+    var ctx = canvas.getContext('2d'), W = 560, H = 280;
+    var models = [
+        { name: 'GAN', maxSteps: 1, color: '#22c55e', progress: 0 },
+        { name: 'Diffusion', maxSteps: 50, color: '#3b82f6', progress: 0 },
+        { name: 'AR (tokens)', maxSteps: 1024, color: '#f59e0b', progress: 0 },
+        { name: 'AR (pixels)', maxSteps: 65536, color: '#ef4444', progress: 0 }
+    ];
+    var animating = false, startTime = 0, totalDuration = 5000;
+
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        var pad = { l: 110, r: 30, t: 20, b: 30 }, pw = W - pad.l - pad.r, barH = 36, gap = 16;
+        for (var mi = 0; mi < models.length; mi++) {
+            var m = models[mi], y = pad.t + mi * (barH + gap);
+            ctx.fillStyle = '#333'; ctx.font = '13px sans-serif'; ctx.textAlign = 'right';
+            ctx.fillText(m.name, pad.l - 12, y + barH / 2 + 4);
+            ctx.fillStyle = '#f1f5f9'; ctx.fillRect(pad.l, y, pw, barH);
+            var barWidth = m.progress * pw;
+            if (barWidth > 0) {
+                var g = ctx.createLinearGradient(pad.l, 0, pad.l + barWidth, 0);
+                g.addColorStop(0, m.color); g.addColorStop(1, m.color + 'cc');
+                ctx.fillStyle = g; ctx.fillRect(pad.l, y, barWidth, barH);
+            }
+            var cur = Math.round(m.progress * m.maxSteps);
+            ctx.fillStyle = barWidth > 80 ? '#fff' : '#333'; ctx.font = 'bold 11px monospace';
+            ctx.textAlign = barWidth > 80 ? 'right' : 'left';
+            var tx = barWidth > 80 ? pad.l + barWidth - 8 : pad.l + barWidth + 6;
+            ctx.fillText(cur.toLocaleString() + ' / ' + m.maxSteps.toLocaleString() + ' steps', tx, y + barH / 2 + 4);
+            if (m.progress >= 1) { ctx.fillStyle = '#22c55e'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'left'; ctx.fillText('\u2713', pad.l + pw + 6, y + barH / 2 + 6); }
+        }
+    }
+
+    function animate(time) {
+        if (!animating) return;
+        if (!startTime) startTime = time;
+        var elapsed = time - startTime;
+        for (var mi = 0; mi < models.length; mi++) {
+            var m = models[mi];
+            var sf = Math.log(65536) / Math.log(Math.max(m.maxSteps, 2));
+            m.progress = Math.min(elapsed / (totalDuration / sf), 1);
+        }
+        draw();
+        var allDone = models.every(function(m) { return m.progress >= 1; });
+        if (allDone) { animating = false; document.getElementById('speedBtn').textContent = 'Start Race'; }
+        else requestAnimationFrame(animate);
+    }
+
+    function start() {
+        if (animating) return;
+        models.forEach(function(m) { m.progress = 0; });
+        animating = true; startTime = 0;
+        document.getElementById('speedBtn').textContent = 'Racing...';
+        requestAnimationFrame(animate);
+    }
+
+    function reset() {
+        animating = false; startTime = 0;
+        models.forEach(function(m) { m.progress = 0; });
+        document.getElementById('speedBtn').textContent = 'Start Race';
+        draw();
+    }
+
+    draw();
+    return { start: start, reset: reset };
+})();
 </script>
