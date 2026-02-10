@@ -60,12 +60,52 @@ dt-header .nav a {
   margin-left: 24px;
   text-transform: uppercase;
 }
+/* ── Mobile hamburger ── */
+dt-header .hamburger {
+  display: none;
+  float: right;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 60px;
+  padding: 0 8px;
+}
+@media (max-width: 860px) {
+  dt-header .nav {
+    display: none;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    background: #EBC043;
+    float: none;
+    padding: 10px 0;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    z-index: 10;
+  }
+  dt-header .nav.open { display: block; }
+  dt-header .nav a {
+    display: block;
+    margin: 0;
+    padding: 10px 20px;
+    height: auto;
+    line-height: 1.5;
+    font-size: 14px;
+  }
+  dt-header .hamburger { display: block; }
+}
+@media (min-width: 1080px) {
+  dt-header .hamburger { line-height: 70px; }
+}
 </style>
 
 <div class="content l-page">
   <a href="/" class="logo">
     <img src="Logo-Main.svg" alt="YellowPeak AI" class="logo-img">
   </a>
+  <button class="hamburger" onclick="this.nextElementSibling.classList.toggle('open')">☰</button>
   <div class="nav">
     <a href="index.html">Home</a>
     <a href="vae.html">VAE</a>

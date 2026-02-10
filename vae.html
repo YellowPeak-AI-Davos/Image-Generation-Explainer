@@ -1,6 +1,8 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Variational Autoencoders — Towards Generative Image AI</title>
+<meta name="description" content="Learn how VAEs compress images into a smooth probabilistic latent space using the ELBO, reparameterization trick, and variational inference.">
 
 <!-- Distill Template -->
 <script src="https://distill.pub/template.v1.js"></script>
@@ -24,6 +26,8 @@
   };
 </script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<link rel="stylesheet" href="styles.css">
 
 <style>
     /* ── Global custom styles ── */
@@ -603,8 +607,28 @@
     <li><strong>Limited expressiveness.</strong> A diagonal Gaussian encoder cannot capture complex, multimodal posteriors.</li>
   </ul>
   <p>
-    These limitations motivate the next family of generative models: <strong>Generative Adversarial Networks (GANs)</strong>, which replace the probabilistic loss with a learned discriminator to directly optimize for visual realism.
+    These limitations motivate the next family of generative models: <a href="gan.html"><strong>Generative Adversarial Networks (GANs)</strong></a>, which replace the probabilistic loss with a learned discriminator to directly optimize for visual realism.
   </p>
+
+  <!-- ── References ── -->
+  <h2>References</h2>
+  <ol class="references-list">
+    <li>Kingma, D. P. &amp; Welling, M. (2013). <em>Auto-Encoding Variational Bayes.</em> <a href="https://arxiv.org/abs/1312.6114" target="_blank">arXiv:1312.6114</a></li>
+    <li>Higgins, I. et al. (2017). <em>β-VAE: Learning Basic Visual Concepts with a Constrained Variational Framework.</em> ICLR 2017.</li>
+    <li>Rezende, D. J., Mohamed, S. &amp; Wierstra, D. (2014). <em>Stochastic Backpropagation and Approximate Inference in Deep Generative Models.</em> <a href="https://arxiv.org/abs/1401.4082" target="_blank">arXiv:1401.4082</a></li>
+  </ol>
+
+  <!-- ── Chapter Navigation ── -->
+  <div class="chapter-nav">
+    <a href="index.html">
+      <span class="nav-label">← Home</span>
+      <span class="nav-title">All Chapters</span>
+    </a>
+    <a href="gan.html" class="next">
+      <span class="nav-label">Next Chapter →</span>
+      <span class="nav-title">Generative Adversarial Networks</span>
+    </a>
+  </div>
 
 </dt-article>
 
@@ -1035,3 +1059,7 @@ function drawGaussian(ctx, w, h, mu, sigma, color, label) {
     });
 })();
 </script>
+
+<div id="includedFooter"></div>
+<script>$(function(){ $("#includedFooter").load("footer.html"); });</script>
+<script src="shared.js"></script>

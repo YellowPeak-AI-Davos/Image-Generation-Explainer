@@ -1,6 +1,8 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Latent Diffusion Models — Towards Generative Image AI</title>
+<meta name="description" content="See how Stable Diffusion compresses images before diffusing — achieving high quality at 48× lower cost with cross-attention and classifier-free guidance.">
 
 <!-- Distill Template -->
 <script src="https://distill.pub/template.v1.js"></script>
@@ -19,6 +21,8 @@
   };
 </script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<link rel="stylesheet" href="styles.css">
 
 <style>
     /* ── Global custom styles ── */
@@ -118,10 +122,10 @@
     }
     button.train-btn:active { transform: scale(0.96); }
     button.train-btn:disabled { background-color: #ccc !important; color: #888 !important; cursor: not-allowed; }
-    .btn-play { background-color: #22c55e; color: white; }
-    .btn-stop { background-color: #f97316; color: white; }
+    .btn-play { background-color: #EBC043; color: #1a1a2e; }
+    .btn-stop { background-color: #c4922a; color: white; }
     .btn-reset { background-color: #e5e7eb; color: #374151; }
-    .btn-primary { background-color: #6366f1; color: white; }
+    .btn-primary { background-color: #EBC043; color: #1a1a2e; }
     .btn-row {
         display: flex;
         gap: 10px;
@@ -705,8 +709,28 @@
     <li>The approach runs on <strong>consumer GPUs</strong>, enabling the explosion of AI-generated art we see today.</li>
   </ul>
   <p>
-    While LDMs are the dominant paradigm for image generation, a fundamentally different approach has been gaining ground: <strong>Autoregressive Models</strong>. Instead of denoising a latent in parallel, autoregressive models generate images <em>token by token</em>, unifying image generation with the same architectures that power large language models. This is our final chapter.
+    While LDMs are the dominant paradigm for image generation, a fundamentally different approach has been gaining ground: <a href="autoregressive.html"><strong>Autoregressive Models</strong></a>. Instead of denoising a latent in parallel, autoregressive models generate images <em>token by token</em>, unifying image generation with the same architectures that power large language models.
   </p>
+
+  <!-- ── References ── -->
+  <h2>References</h2>
+  <ol class="references-list">
+    <li>Rombach, R. et al. (2022). <em>High-Resolution Image Synthesis with Latent Diffusion Models.</em> CVPR 2022. <a href="https://arxiv.org/abs/2112.10752" target="_blank">arXiv:2112.10752</a></li>
+    <li>Ho, J. &amp; Salimans, T. (2022). <em>Classifier-Free Diffusion Guidance.</em> <a href="https://arxiv.org/abs/2207.12598" target="_blank">arXiv:2207.12598</a></li>
+    <li>Dhariwal, P. &amp; Nichol, A. (2021). <em>Diffusion Models Beat GANs on Image Synthesis.</em> <a href="https://arxiv.org/abs/2105.05233" target="_blank">arXiv:2105.05233</a></li>
+  </ol>
+
+  <!-- ── Chapter Navigation ── -->
+  <div class="chapter-nav">
+    <a href="pixel-diffusion.html">
+      <span class="nav-label">← Previous</span>
+      <span class="nav-title">Pixel-Space Diffusion</span>
+    </a>
+    <a href="autoregressive.html" class="next">
+      <span class="nav-label">Next Chapter →</span>
+      <span class="nav-title">Autoregressive Models</span>
+    </a>
+  </div>
 
 </dt-article>
 
@@ -720,7 +744,7 @@ function createBaseImage(size) {
     c.width = size; c.height = size;
     const cx = c.getContext('2d');
     const grad = cx.createLinearGradient(0, 0, 0, size);
-    grad.addColorStop(0, '#3b82f6');
+    grad.addColorStop(0, '#1a1a2e');
     grad.addColorStop(0.5, '#f472b6');
     grad.addColorStop(1, '#1e1b4b');
     cx.fillStyle = grad; cx.fillRect(0, 0, size, size);
@@ -1034,7 +1058,7 @@ const Pipeline = (function() {
         const cx = c.getContext('2d');
         // Sky
         const g = cx.createLinearGradient(0, 0, 0, sz);
-        g.addColorStop(0, '#1e3a5f'); g.addColorStop(0.5, '#2563eb'); g.addColorStop(1, '#064e3b');
+        g.addColorStop(0, '#1e3a5f'); g.addColorStop(0.5, '#1a1a2e'); g.addColorStop(1, '#064e3b');
         cx.fillStyle = g; cx.fillRect(0, 0, sz, sz);
         // Moon
         cx.beginPath(); cx.arc(sz*0.7, sz*0.22, 18, 0, Math.PI*2);
@@ -1111,3 +1135,7 @@ const Pipeline = (function() {
     showHeatmap('cat');
 })();
 </script>
+
+<div id="includedFooter"></div>
+<script>$(function(){ $("#includedFooter").load("footer.html"); });</script>
+<script src="shared.js"></script>

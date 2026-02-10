@@ -1,6 +1,8 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diffusion Transformers (DiT) — Towards Generative Image AI</title>
+<meta name="description" content="The state of the art: replacing U-Nets with Transformers for global attention, adaLN-Zero conditioning, clean scaling laws, and unmatched image quality.">
 
 <!-- Distill Template -->
 <script src="https://distill.pub/template.v1.js"></script>
@@ -24,6 +26,8 @@
   };
 </script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<link rel="stylesheet" href="styles.css">
 
 <style>
     /* ── Global custom styles ── */
@@ -103,7 +107,7 @@
         margin: 1.5rem 0;
     }
     .intuition-box::before {
-        content: '\1F4A1 Intuition';
+        content: '💡 Intuition';
         display: block;
         font-weight: 700;
         font-size: 0.85em;
@@ -123,10 +127,10 @@
     }
     button.train-btn:active { transform: scale(0.96); }
     button.train-btn:disabled { background-color: #ccc !important; color: #888 !important; cursor: not-allowed; }
-    .btn-play { background-color: #22c55e; color: white; }
-    .btn-stop { background-color: #f97316; color: white; }
+    .btn-play { background-color: #EBC043; color: #1a1a2e; }
+    .btn-stop { background-color: #c4922a; color: white; }
     .btn-reset { background-color: #e5e7eb; color: #374151; }
-    .btn-primary { background-color: #f59e0b; color: white; }
+    .btn-primary { background-color: #EBC043; color: #1a1a2e; }
     .btn-row {
         display: flex;
         gap: 10px;
@@ -519,44 +523,44 @@
   <p>
     To appreciate what DiT changes, let us compare the two backbones side by side:
   </p>
-  <table style="width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.95em;">
+  <table class="comparison-table">
     <thead>
-      <tr style="background:#f4f4f4;">
-        <th style="padding:8px; border:1px solid #ddd; text-align:left;">Property</th>
-        <th style="padding:8px; border:1px solid #ddd; text-align:center;">U-Net</th>
-        <th style="padding:8px; border:1px solid #ddd; text-align:center;">DiT</th>
+      <tr>
+        <th>Property</th>
+        <th>U-Net</th>
+        <th>DiT</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td style="padding:8px; border:1px solid #ddd;">Core operation</td>
-        <td style="padding:8px; border:1px solid #ddd; text-align:center;">Conv + Skip connections</td>
-        <td style="padding:8px; border:1px solid #ddd; text-align:center;">Self-Attention + FFN</td>
+        <td>Core operation</td>
+        <td>Conv + Skip connections</td>
+        <td>Self-Attention + FFN</td>
       </tr>
       <tr>
-        <td style="padding:8px; border:1px solid #ddd;">Receptive field</td>
-        <td style="padding:8px; border:1px solid #ddd; text-align:center;">Local (grows with depth)</td>
-        <td style="padding:8px; border:1px solid #ddd; text-align:center;">Global (every layer)</td>
+        <td>Receptive field</td>
+        <td>Local (grows with depth)</td>
+        <td>Global (every layer)</td>
       </tr>
       <tr>
-        <td style="padding:8px; border:1px solid #ddd;">Conditioning</td>
-        <td style="padding:8px; border:1px solid #ddd; text-align:center;">Cross-attention layers</td>
-        <td style="padding:8px; border:1px solid #ddd; text-align:center;">adaLN-Zero</td>
+        <td>Conditioning</td>
+        <td>Cross-attention layers</td>
+        <td>adaLN-Zero</td>
       </tr>
       <tr>
-        <td style="padding:8px; border:1px solid #ddd;">Scale-up recipe</td>
-        <td style="padding:8px; border:1px solid #ddd; text-align:center;">Ad-hoc (width/depth/attention mix)</td>
-        <td style="padding:8px; border:1px solid #ddd; text-align:center;">Clean (add more Transformer blocks)</td>
+        <td>Scale-up recipe</td>
+        <td>Ad-hoc (width/depth/attention mix)</td>
+        <td>Clean (add more Transformer blocks)</td>
       </tr>
       <tr>
-        <td style="padding:8px; border:1px solid #ddd;">Scaling behaviour</td>
-        <td style="padding:8px; border:1px solid #ddd; text-align:center;">Diminishing returns</td>
-        <td style="padding:8px; border:1px solid #ddd; text-align:center;">Predictable log-linear improvement</td>
+        <td>Scaling behaviour</td>
+        <td>Diminishing returns</td>
+        <td>Predictable log-linear improvement</td>
       </tr>
       <tr>
-        <td style="padding:8px; border:1px solid #ddd;">FLOPs at inference</td>
-        <td style="padding:8px; border:1px solid #ddd; text-align:center;">Lower (locality)</td>
-        <td style="padding:8px; border:1px solid #ddd; text-align:center;">Higher ($O(T^2)$ attention)</td>
+        <td>FLOPs at inference</td>
+        <td>Lower (locality)</td>
+        <td>Higher ($O(T^2)$ attention)</td>
       </tr>
     </tbody>
   </table>
@@ -711,6 +715,26 @@
   <p>
     Each section of this explainer has built upon the last: from the basics of VAEs and GANs, through pixel-space and latent-space diffusion, to autoregressive models, and finally here to Diffusion Transformers. Together they form the full story of modern generative image AI.
   </p>
+
+  <!-- ── References ── -->
+  <h2>References</h2>
+  <ol class="references-list">
+    <li>Peebles, W. &amp; Xie, S. (2023). <em>Scalable Diffusion Models with Transformers.</em> ICCV 2023. <a href="https://arxiv.org/abs/2212.09748" target="_blank">arXiv:2212.09748</a></li>
+    <li>Dosovitskiy, A. et al. (2020). <em>An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale.</em> <a href="https://arxiv.org/abs/2010.11929" target="_blank">arXiv:2010.11929</a></li>
+    <li>Esser, P. et al. (2024). <em>Scaling Rectified Flow Transformers for High-Resolution Image Synthesis.</em> <a href="https://arxiv.org/abs/2403.03206" target="_blank">arXiv:2403.03206</a></li>
+  </ol>
+
+  <!-- ── Chapter Navigation ── -->
+  <div class="chapter-nav">
+    <a href="autoregressive.html">
+      <span class="nav-label">← Previous</span>
+      <span class="nav-title">Autoregressive Models</span>
+    </a>
+    <a href="index.html" class="next">
+      <span class="nav-label">Back to Home →</span>
+      <span class="nav-title">All Chapters</span>
+    </a>
+  </div>
 
 </dt-article>
 
@@ -924,7 +948,7 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a
 
     const labels = ['γ (scale)', 'β (shift)', 'α (gate)'];
     const vals   = [gamma, beta, alpha];
-    const colors = ['#3b82f6', '#22c55e', '#EBC043'];
+    const colors = ['#1a1a2e', '#c4922a', '#EBC043'];
     const barW = 40;
     const gap = (SZ - 3 * barW) / 4;
 
@@ -1369,3 +1393,7 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a
 })();
 
 </script>
+
+<div id="includedFooter"></div>
+<script>$(function(){ $("#includedFooter").load("footer.html"); });</script>
+<script src="shared.js"></script>

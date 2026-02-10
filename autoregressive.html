@@ -1,6 +1,8 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autoregressive Image Models — Towards Generative Image AI</title>
+<meta name="description" content="Explore how treating images like sentences — predicting one pixel at a time — enables exact likelihood training with PixelCNN and ImageGPT.">
 
 <!-- Distill Template -->
 <script src="https://distill.pub/template.v1.js"></script>
@@ -24,6 +26,8 @@
   };
 </script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<link rel="stylesheet" href="styles.css">
 
 <style>
     /* ── Global custom styles ── */
@@ -123,10 +127,10 @@
     }
     button.train-btn:active { transform: scale(0.96); }
     button.train-btn:disabled { background-color: #ccc !important; color: #888 !important; cursor: not-allowed; }
-    .btn-play { background-color: #22c55e; color: white; }
-    .btn-stop { background-color: #f97316; color: white; }
+    .btn-play { background-color: #EBC043; color: #1a1a2e; }
+    .btn-stop { background-color: #c4922a; color: white; }
     .btn-reset { background-color: #e5e7eb; color: #374151; }
-    .btn-primary { background-color: #f59e0b; color: white; }
+    .btn-primary { background-color: #EBC043; color: #1a1a2e; }
     .btn-row {
         display: flex;
         gap: 10px;
@@ -588,8 +592,29 @@
     <li><strong>Temperature, top-k, and top-p</strong> sampling control diversity–quality at generation time.</li>
   </ul>
   <p>
-    The fundamental trade-off: exact likelihoods and stable training at the cost of <strong>slow, sequential generation</strong>. This motivates hybrid approaches combining autoregressive models with parallel generation of diffusion models — explored in the next section on <strong>Diffusion Transformers</strong>.
+    The fundamental trade-off: exact likelihoods and stable training at the cost of <strong>slow, sequential generation</strong>. This motivates hybrid approaches combining autoregressive models with parallel generation of diffusion models — explored in the next section on <a href="diffusion_transformer.html"><strong>Diffusion Transformers</strong></a>.
   </p>
+
+  <!-- ── References ── -->
+  <h2>References</h2>
+  <ol class="references-list">
+    <li>van den Oord, A. et al. (2016). <em>Pixel Recurrent Neural Networks.</em> ICML 2016. <a href="https://arxiv.org/abs/1601.06759" target="_blank">arXiv:1601.06759</a></li>
+    <li>van den Oord, A. et al. (2016). <em>Conditional Image Generation with PixelCNN Decoders.</em> NeurIPS 2016. <a href="https://arxiv.org/abs/1606.05328" target="_blank">arXiv:1606.05328</a></li>
+    <li>Salimans, T. et al. (2017). <em>PixelCNN++: Improving the PixelCNN with Discretized Logistic Mixture Likelihood.</em> <a href="https://arxiv.org/abs/1701.05517" target="_blank">arXiv:1701.05517</a></li>
+    <li>Esser, P., Rombach, R. &amp; Ommer, B. (2021). <em>Taming Transformers for High-Resolution Image Synthesis.</em> CVPR 2021. <a href="https://arxiv.org/abs/2012.09841" target="_blank">arXiv:2012.09841</a></li>
+  </ol>
+
+  <!-- ── Chapter Navigation ── -->
+  <div class="chapter-nav">
+    <a href="latent-diffusion.html">
+      <span class="nav-label">← Previous</span>
+      <span class="nav-title">Latent Diffusion Models</span>
+    </a>
+    <a href="diffusion_transformer.html" class="next">
+      <span class="nav-label">Next Chapter →</span>
+      <span class="nav-title">Diffusion Transformers</span>
+    </a>
+  </div>
 
 </dt-article>
 
@@ -949,10 +974,10 @@ var SPEED = (function() {
     if (!canvas) return {};
     var ctx = canvas.getContext('2d'), W = 560, H = 280;
     var models = [
-        { name: 'GAN', maxSteps: 1, color: '#22c55e', progress: 0 },
-        { name: 'Diffusion', maxSteps: 50, color: '#3b82f6', progress: 0 },
-        { name: 'AR (tokens)', maxSteps: 1024, color: '#f59e0b', progress: 0 },
-        { name: 'AR (pixels)', maxSteps: 65536, color: '#ef4444', progress: 0 }
+        { name: 'GAN', maxSteps: 1, color: '#EBC043', progress: 0 },
+        { name: 'Diffusion', maxSteps: 50, color: '#1a1a2e', progress: 0 },
+        { name: 'AR (tokens)', maxSteps: 1024, color: '#c4922a', progress: 0 },
+        { name: 'AR (pixels)', maxSteps: 65536, color: '#8b6914', progress: 0 }
     ];
     var animating = false, startTime = 0, totalDuration = 5000;
 
@@ -1013,3 +1038,7 @@ var SPEED = (function() {
     return { start: start, reset: reset };
 })();
 </script>
+
+<div id="includedFooter"></div>
+<script>$(function(){ $("#includedFooter").load("footer.html"); });</script>
+<script src="shared.js"></script>

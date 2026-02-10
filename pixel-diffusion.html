@@ -1,6 +1,8 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel-Space Diffusion (DDPM) — Towards Generative Image AI</title>
+<meta name="description" content="Understand how Denoising Diffusion Probabilistic Models destroy images with noise and learn to reverse the process step by step.">
 
 <!-- Distill Template -->
 <script src="https://distill.pub/template.v1.js"></script>
@@ -19,6 +21,8 @@
   };
 </script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<link rel="stylesheet" href="styles.css">
 
 <style>
     /* ── Global custom styles ── */
@@ -118,10 +122,10 @@
     }
     button.train-btn:active { transform: scale(0.96); }
     button.train-btn:disabled { background-color: #ccc !important; color: #888 !important; cursor: not-allowed; }
-    .btn-play { background-color: #22c55e; color: white; }
-    .btn-stop { background-color: #f97316; color: white; }
+    .btn-play { background-color: #EBC043; color: #1a1a2e; }
+    .btn-stop { background-color: #c4922a; color: white; }
     .btn-reset { background-color: #e5e7eb; color: #374151; }
-    .btn-primary { background-color: #3b82f6; color: white; }
+    .btn-primary { background-color: #EBC043; color: #1a1a2e; }
     .btn-row {
         display: flex;
         gap: 10px;
@@ -383,8 +387,8 @@
   <div class="interactive-container" id="scheduleContainer">
     <h4>Interactive · Noise Schedule Comparison</h4>
     <div class="legend">
-      <span><div class="dot" style="background:#3b82f6"></div> Linear $\bar\alpha_t$</span>
-      <span><div class="dot" style="background:#ef4444"></div> Cosine $\bar\alpha_t$</span>
+      <span><div class="dot" style="background:#1a1a2e"></div> Linear $\bar\alpha_t$</span>
+      <span><div class="dot" style="background:#c4922a"></div> Cosine $\bar\alpha_t$</span>
       <span><div class="dot" style="background:#888"></div> $\bar\alpha_t = 0$ (pure noise)</span>
     </div>
     <div class="canvas-wrapper">
@@ -649,8 +653,29 @@
     <li><strong>Principled foundations:</strong> Grounded in variational inference with a clean decomposition of the VLB.</li>
   </ul>
   <p>
-    The cost of these advantages is <strong>slow generation</strong>: hundreds of sequential network evaluations in high-dimensional pixel space. The solution is to move the diffusion process into a compressed <strong>latent space</strong> — which is exactly what we explore next.
+    The cost of these advantages is <strong>slow generation</strong>: hundreds of sequential network evaluations in high-dimensional pixel space. The solution is to move the diffusion process into a compressed <a href="latent-diffusion.html"><strong>latent space</strong></a> — which is exactly what we explore next.
   </p>
+
+  <!-- ── References ── -->
+  <h2>References</h2>
+  <ol class="references-list">
+    <li>Ho, J., Jain, A. &amp; Abbeel, P. (2020). <em>Denoising Diffusion Probabilistic Models.</em> NeurIPS 2020. <a href="https://arxiv.org/abs/2006.11239" target="_blank">arXiv:2006.11239</a></li>
+    <li>Sohl-Dickstein, J. et al. (2015). <em>Deep Unsupervised Learning using Nonequilibrium Thermodynamics.</em> <a href="https://arxiv.org/abs/1503.03585" target="_blank">arXiv:1503.03585</a></li>
+    <li>Nichol, A. &amp; Dhariwal, P. (2021). <em>Improved Denoising Diffusion Probabilistic Models.</em> <a href="https://arxiv.org/abs/2102.09672" target="_blank">arXiv:2102.09672</a></li>
+    <li>Song, J. et al. (2020). <em>Denoising Diffusion Implicit Models.</em> <a href="https://arxiv.org/abs/2010.02502" target="_blank">arXiv:2010.02502</a></li>
+  </ol>
+
+  <!-- ── Chapter Navigation ── -->
+  <div class="chapter-nav">
+    <a href="gan.html">
+      <span class="nav-label">← Previous</span>
+      <span class="nav-title">Generative Adversarial Networks</span>
+    </a>
+    <a href="latent-diffusion.html" class="next">
+      <span class="nav-label">Next Chapter →</span>
+      <span class="nav-title">Latent Diffusion Models</span>
+    </a>
+  </div>
 
 </dt-article>
 
@@ -664,7 +689,7 @@ function createBaseImage(size) {
     c.width = size; c.height = size;
     const cx = c.getContext('2d');
     const grad = cx.createLinearGradient(0, 0, 0, size);
-    grad.addColorStop(0, '#3b82f6');
+    grad.addColorStop(0, '#1a1a2e');
     grad.addColorStop(0.5, '#f472b6');
     grad.addColorStop(1, '#1e1b4b');
     cx.fillStyle = grad;
@@ -824,7 +849,7 @@ const DiffDemo = (function() {
         ctx.setLineDash([]);
 
         // Linear schedule
-        ctx.beginPath(); ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.strokeStyle = '#1a1a2e'; ctx.lineWidth = 2.5;
         const linSamples = 200;
         for (let i = 0; i <= linSamples; i++) {
             const t = Math.round((i / linSamples) * T);
@@ -836,7 +861,7 @@ const DiffDemo = (function() {
         ctx.stroke();
 
         // Cosine schedule
-        ctx.beginPath(); ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.strokeStyle = '#c4922a'; ctx.lineWidth = 2.5;
         for (let i = 0; i <= linSamples; i++) {
             const t = Math.round((i / linSamples) * T);
             const ab = cosineAlphaBar(t, T);
@@ -848,8 +873,8 @@ const DiffDemo = (function() {
 
         // Labels
         ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
-        ctx.fillStyle = '#3b82f6'; ctx.fillText('Linear', pad + 10, pad + 16);
-        ctx.fillStyle = '#ef4444'; ctx.fillText('Cosine', pad + 10, pad + 32);
+        ctx.fillStyle = '#1a1a2e'; ctx.fillText('Linear', pad + 10, pad + 16);
+        ctx.fillStyle = '#c4922a'; ctx.fillText('Cosine', pad + 10, pad + 32);
     }
 
     slider.addEventListener('input', draw);
@@ -1026,3 +1051,7 @@ const GenDemo = (function() {
     return { start, reset };
 })();
 </script>
+
+<div id="includedFooter"></div>
+<script>$(function(){ $("#includedFooter").load("footer.html"); });</script>
+<script src="shared.js"></script>
