@@ -60,6 +60,23 @@
         max-width: 640px;
     }
 
+    /* ── Alignment fixes ── */
+    dt-article .interactive-container,
+    dt-article .intuition-box,
+    dt-article .derivation-step {
+      width: 100%;
+      max-width: 760px;
+      margin-left: auto;
+      margin-right: auto;
+      box-sizing: border-box;
+    }
+    dt-article .MathJax_Display,
+    dt-article mjx-container[display="true"] {
+      text-align: center;
+      margin-left: auto !important;
+      margin-right: auto !important;
+    }
+
     /* ── Derivation steps ── */
     .derivation-step {
         background: #f4f8fb;
