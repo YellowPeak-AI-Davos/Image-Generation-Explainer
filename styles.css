@@ -7,6 +7,9 @@ html {
     scroll-behavior: smooth;
 }
 
+/* ── Hide Distill draft banner ── */
+dt-banner { display: none !important; }
+
 /* ── Interactive containers ── */
 .interactive-container {
     border: 1px solid rgba(0,0,0,0.1);
