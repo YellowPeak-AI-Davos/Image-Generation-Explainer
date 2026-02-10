@@ -860,11 +860,11 @@ var AR = (function() {
         ctx.fillText('Pixel-level', pad.l - 10, pad.t + barH / 2 + 4);
         ctx.fillText('Token-level', pad.l - 10, pad.t + barH + 30 + barH / 2 + 4);
         var g1 = ctx.createLinearGradient(pad.l, 0, pad.l + pixW, 0);
-        g1.addColorStop(0, '#ef4444'); g1.addColorStop(1, '#f87171');
+        g1.addColorStop(0, '#c4922a'); g1.addColorStop(1, '#EBC043');
         ctx.fillStyle = g1; ctx.fillRect(pad.l, pad.t, pixW, barH);
         if (pixW > 80) { ctx.fillStyle = '#fff'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.fillText(pixelSteps.toLocaleString() + ' steps', pad.l + 8, pad.t + barH / 2 + 4); }
         var g2 = ctx.createLinearGradient(pad.l, 0, pad.l + tokW, 0);
-        g2.addColorStop(0, '#22c55e'); g2.addColorStop(1, '#4ade80');
+        g2.addColorStop(0, '#1a1a2e'); g2.addColorStop(1, '#2d2d4e');
         ctx.fillStyle = g2; ctx.fillRect(pad.l, pad.t + barH + 30, tokW, barH);
         ctx.fillStyle = tokW > 60 ? '#fff' : '#333'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
         ctx.fillText(tokenSteps.toLocaleString() + ' steps', pad.l + tokW + 6, pad.t + barH + 30 + barH / 2 + 4);
@@ -1000,7 +1000,7 @@ var SPEED = (function() {
             ctx.textAlign = barWidth > 80 ? 'right' : 'left';
             var tx = barWidth > 80 ? pad.l + barWidth - 8 : pad.l + barWidth + 6;
             ctx.fillText(cur.toLocaleString() + ' / ' + m.maxSteps.toLocaleString() + ' steps', tx, y + barH / 2 + 4);
-            if (m.progress >= 1) { ctx.fillStyle = '#22c55e'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'left'; ctx.fillText('\u2713', pad.l + pw + 6, y + barH / 2 + 6); }
+            if (m.progress >= 1) { ctx.fillStyle = '#EBC043'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'left'; ctx.fillText('\u2713', pad.l + pw + 6, y + barH / 2 + 6); }
         }
     }
 

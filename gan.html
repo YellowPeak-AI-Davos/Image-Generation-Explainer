@@ -679,9 +679,9 @@ const GAN = (function() {
             ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
         }
 
-        // Real (green)
+        // Real (gold)
         ctx.beginPath();
-        ctx.strokeStyle = '#22c55e';
+        ctx.strokeStyle = '#EBC043';
         ctx.lineWidth = 3;
         for (let x = 0; x < W; x++) {
             const y = gaussPDF(x, realMean, realStd) * 9000;
@@ -691,12 +691,12 @@ const GAN = (function() {
         // Fill
         ctx.globalAlpha = 0.1;
         ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
-        ctx.fillStyle = '#22c55e'; ctx.fill();
+        ctx.fillStyle = '#EBC043'; ctx.fill();
         ctx.globalAlpha = 1;
 
-        // Fake (red)
+        // Fake (dark gold)
         ctx.beginPath();
-        ctx.strokeStyle = '#ef4444';
+        ctx.strokeStyle = '#c4922a';
         ctx.lineWidth = 3;
         for (let x = 0; x < W; x++) {
             const y = gaussPDF(x, fakeMean, fakeStd) * 9000;
@@ -705,7 +705,7 @@ const GAN = (function() {
         ctx.stroke();
         ctx.globalAlpha = 0.1;
         ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
-        ctx.fillStyle = '#ef4444'; ctx.fill();
+        ctx.fillStyle = '#c4922a'; ctx.fill();
         ctx.globalAlpha = 1;
 
         // Discriminator (navy dashed)
@@ -816,16 +816,16 @@ const GAN = (function() {
 
         const scale = 7000;
 
-        // p_data (green)
-        ctx.beginPath(); ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2.5;
+        // p_data (gold)
+        ctx.beginPath(); ctx.strokeStyle = '#EBC043'; ctx.lineWidth = 2.5;
         for (let x = 0; x < W; x++) {
             const y = gaussPDF(x, realMean, std) * scale;
             if (x === 0) ctx.moveTo(x, H - y); else ctx.lineTo(x, H - y);
         }
         ctx.stroke();
 
-        // p_g (red)
-        ctx.beginPath(); ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2.5;
+        // p_g (dark gold)
+        ctx.beginPath(); ctx.strokeStyle = '#c4922a'; ctx.lineWidth = 2.5;
         for (let x = 0; x < W; x++) {
             const y = gaussPDF(x, gMean, std) * scale;
             if (x === 0) ctx.moveTo(x, H - y); else ctx.lineTo(x, H - y);
@@ -885,8 +885,8 @@ const GAN = (function() {
 
         const scale = 4000;
 
-        // Real data (3 modes, green)
-        ctx.beginPath(); ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 2.5;
+        // Real data (3 modes, gold)
+        ctx.beginPath(); ctx.strokeStyle = '#EBC043'; ctx.lineWidth = 2.5;
         for (let x = 0; x < W; x++) {
             let y = 0;
             modes.forEach(m => { y += gaussPDF(x, m.mean, m.std); });
@@ -896,7 +896,7 @@ const GAN = (function() {
         ctx.stroke();
         ctx.globalAlpha = 0.08;
         ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
-        ctx.fillStyle = '#22c55e'; ctx.fill();
+        ctx.fillStyle = '#EBC043'; ctx.fill();
         ctx.globalAlpha = 1;
 
         // Generator (red) — diversity controls how many modes are covered
@@ -908,7 +908,7 @@ const GAN = (function() {
         ];
         const totalW = weights.reduce((a, b) => a + b, 0);
 
-        ctx.beginPath(); ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.strokeStyle = '#c4922a'; ctx.lineWidth = 2.5;
         for (let x = 0; x < W; x++) {
             let y = 0;
             modes.forEach((m, i) => {
@@ -921,7 +921,7 @@ const GAN = (function() {
         ctx.stroke();
         ctx.globalAlpha = 0.08;
         ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
-        ctx.fillStyle = '#ef4444'; ctx.fill();
+        ctx.fillStyle = '#c4922a'; ctx.fill();
         ctx.globalAlpha = 1;
 
         // Label
@@ -994,8 +994,8 @@ const GAN = (function() {
         }
         ctx.stroke();
 
-        // G loss (red)
-        ctx.beginPath(); ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+        // G loss (dark gold)
+        ctx.beginPath(); ctx.strokeStyle = '#c4922a'; ctx.lineWidth = 2;
         for (let i = 0; i < steps; i++) {
             const t = i / steps;
             let gLoss;

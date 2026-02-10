@@ -709,7 +709,7 @@ function drawGaussian(ctx, w, h, mu, sigma, color, label) {
         {x: 220, y: 210}, {x: 140, y: 140}, {x: 50, y: 140},
         {x: 210, y: 130}
     ];
-    const colors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22'];
+    const colors = ['#EBC043','#c4922a','#8b6914','#1a1a2e','#4a3f2f','#d4a82e','#e67e22'];
 
     function drawCluster(ctx, cx, cy, spread, color, n) {
         ctx.fillStyle = color;
@@ -827,7 +827,7 @@ function drawGaussian(ctx, w, h, mu, sigma, color, label) {
         muValSpan.textContent = mu.toFixed(1);
         sigmaValSpan.textContent = sigma.toFixed(1);
 
-        drawGaussian(epsCtx, 220, 160, 0, 1, '#3498db');
+        drawGaussian(epsCtx, 220, 160, 0, 1, '#1a1a2e');
         drawGaussian(zCtx, 220, 160, mu, sigma, '#EBC043');
     }
 
@@ -863,7 +863,7 @@ function drawGaussian(ctx, w, h, mu, sigma, color, label) {
         {x: 0.2, y: 0.2}, {x: 0.8, y: 0.2}, {x: 0.5, y: 0.5},
         {x: 0.2, y: 0.8}, {x: 0.8, y: 0.8}
     ];
-    const clusterColors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6'];
+    const clusterColors = ['#EBC043','#1a1a2e','#c4922a','#8b6914','#4a3f2f'];
 
     function drawLatent(beta) {
         latCtx.clearRect(0, 0, W, H);
